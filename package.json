@@ -1,0 +1,35 @@
+{
+  "name": "multimodal-notes",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@nuxt/eslint": "1.10.0",
+    "@nuxt/ui": "4.1.0",
+    "@nuxtjs/tailwindcss": "7.0.0-beta.1",
+    "@pinia/nuxt": "^0.11.3",
+    "@tailwindcss/vite": "^4.1.18",
+    "axios": "^1.13.5",
+    "dayjs": "^1.11.19",
+    "eslint": "^9.38.0",
+    "nuxt": "^4.2.0",
+    "sass": "^1.97.3",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
+  },
+  "packageManager": "pnpm@10.29.3",
+  "devDependencies": {
+    "@element-plus/nuxt": "^1.1.5",
+    "baseline-browser-mapping": "^2.9.19",
+    "element-plus": "^2.13.2"
+  }
+}
