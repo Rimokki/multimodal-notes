@@ -1,7 +1,7 @@
 <script lang="ts" setup></script>
 
 <template>
-  <div>about page</div>
+  <h1 class="font-bold text-2xl mt-2! ml-2!">回收站</h1>
 </template>
 
 <style lang="postcss" scoped></style>

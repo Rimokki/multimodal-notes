@@ -2,6 +2,7 @@
   import { ref } from 'vue'
   import {
     Plus,
+    Delete,
     Star,
     Search,
     Document,
@@ -12,13 +13,16 @@
   } from '@element-plus/icons-vue'
 
   const isCollapse = ref(false)
+  const route = useRoute()
 
-  const state = reactive({
-    circleUrl:
-      'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
-    squareUrl:
-      'https://cube.elemecdn.com/9/c2/f0ee8a3c7c9638a54940382568c9dpng.png',
-    sizeList: ['small', '', 'large'] as const,
+  const activeIndex = computed(() => {
+    const path = route.path
+    if (path === '/') return '1'
+    if (path.startsWith('/my-notes')) return '2'
+    if (path.startsWith('/favourite')) return '3'
+    if (path.startsWith('/recycle-bin')) return '4'
+    if (path.startsWith('/settings')) return '5'
+    return '1'
   })
 
   const toggleCollapse = () => {
@@ -33,9 +37,11 @@
     <div
       class="h-14 flex items-center justify-evenly overflow-hidden whitespace-nowrap">
       <span v-if="!isCollapse" class="font-bold text-gray-700 text-lg"
-        >Multimodal Notes</span
+        >Multimodal-Notes</span
       >
-      <el-avatar :size="36" :src="state.circleUrl" />
+      <el-avatar
+        :size="36"
+        src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
     </div>
     <div class="flex justify-evenly my-2!">
       <el-input
@@ -54,29 +60,44 @@
     </div>
 
     <el-menu
-      default-active="1"
+      :default-active="activeIndex"
       class="el-menu-vertical bg-gray-100 h-full font-bold"
       :collapse="isCollapse"
       :collapse-transition="false">
-      <el-menu-item index="1">
-        <el-icon><icon-menu /></el-icon>
-        <template #title>工作台</template>
-      </el-menu-item>
+      <NuxtLink to="/">
+        <el-menu-item index="1">
+          <el-icon><icon-menu /></el-icon>
+          <template #title>工作台</template>
+        </el-menu-item>
+      </NuxtLink>
 
-      <el-menu-item index="2">
-        <el-icon><document /></el-icon>
-        <template #title>全部笔记</template>
-      </el-menu-item>
+      <NuxtLink to="/my-notes">
+        <el-menu-item index="2">
+          <el-icon><document /></el-icon>
+          <template #title>全部笔记</template>
+        </el-menu-item>
+      </NuxtLink>
 
-      <el-menu-item index="3">
-        <el-icon><star /></el-icon>
-        <template #title>我的收藏</template>
-      </el-menu-item>
+      <NuxtLink to="/favourite">
+        <el-menu-item index="3">
+          <el-icon><star /></el-icon>
+          <template #title>我的收藏</template>
+        </el-menu-item>
+      </NuxtLink>
 
-      <el-menu-item index="4">
-        <el-icon><setting /></el-icon>
-        <template #title>应用设置</template>
-      </el-menu-item>
+      <NuxtLink to="/recycle-bin">
+        <el-menu-item index="4">
+          <el-icon><delete /></el-icon>
+          <template #title>回收站</template>
+        </el-menu-item>
+      </NuxtLink>
+
+      <NuxtLink to="/settings">
+        <el-menu-item index="5">
+          <el-icon><setting /></el-icon>
+          <template #title>应用设置</template>
+        </el-menu-item>
+      </NuxtLink>
     </el-menu>
 
     <div

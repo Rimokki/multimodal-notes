@@ -3,6 +3,9 @@ export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+  },
   imports: {
     autoImport: true,
     dirs: ['composables'],
