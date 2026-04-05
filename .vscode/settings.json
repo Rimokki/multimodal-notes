@@ -1,3 +1,4 @@
 {
-  "cSpell.words": ["nuxt"]
+  "cSpell.words": ["nuxt"],
+  "css.lint.unknownAtRules": "ignore"
 }

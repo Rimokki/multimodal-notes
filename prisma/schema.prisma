@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  username     String?       @unique
+  passwordHash String
+  displayName  String?
+  avatarUrl    String?
+  isActive     Boolean       @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  notes        Note[]
+  sessions     UserSession[]
+
+  @@index([createdAt])
+}
+
+model UserSession {
+  id               String    @id @default(cuid())
+  userId           Int
+  refreshTokenHash String    @unique
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model Note {
+  id         Int      @id @default(autoincrement())
+  userId     Int?
+  owner      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title      String
+  content    String   // Tiptap JSON string
+  rawText    String?  // Plain text for search optimization
+  isFavorite Boolean  @default(false)
+  isDeleted  Boolean  @default(false)
+  deletedAt  DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, updatedAt])
+  @@index([userId, isDeleted, updatedAt])
+  @@index([userId, isFavorite, updatedAt])
+}
