@@ -13,7 +13,9 @@
   } from '@element-plus/icons-vue'
 
   const isCollapse = ref(false)
+  const fullscreenLoading = ref(false)
   const route = useRoute()
+  const router = useRouter()
 
   const activeIndex = computed(() => {
     const path = route.path
@@ -28,17 +30,22 @@
   const toggleCollapse = () => {
     isCollapse.value = !isCollapse.value
   }
+
+  const handleCreateNote = () => {
+    fullscreenLoading.value = true
+    setTimeout(() => {
+      fullscreenLoading.value = false
+      router.push('/editor')
+    }, 600)
+  }
 </script>
 
 <template>
   <div
     class="sidebar-container relative h-screen bg-gray-100 transition-all duration-300 ease-in-out group"
     :style="{ width: isCollapse ? '64px' : '256px' }">
-    <div
-      class="h-14 flex items-center justify-evenly overflow-hidden whitespace-nowrap">
-      <span v-if="!isCollapse" class="font-bold text-gray-700 text-lg"
-        >Multimodal-Notes</span
-      >
+    <div class="h-14 flex items-center justify-evenly overflow-hidden whitespace-nowrap">
+      <span v-if="!isCollapse" class="font-bold text-gray-700 text-lg">Multimodal-Notes</span>
       <el-avatar
         :size="36"
         src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
@@ -47,16 +54,19 @@
       <el-input
         v-if="!isCollapse"
         readonly
-        style="width: 180px"
+        style="width: 180px; height: 36px"
         size="large"
         placeholder="搜索"
         class="el-border-radius"
         :prefix-icon="Search" />
-      <el-button
-        type="default"
-        size="large"
-        :icon="Plus"
-        class="w-4 h-4 el-border-radius" />
+      <el-tooltip content="新建笔记" placement="bottom" effect="light">
+        <el-button
+          v-loading.fullscreen.lock="fullscreenLoading"
+          type="default"
+          :icon="Plus"
+          class="el-border-radius p-2! w-9! h-9!"
+          @click="handleCreateNote" />
+      </el-tooltip>
     </div>
 
     <el-menu
@@ -74,7 +84,7 @@
       <NuxtLink to="/my-notes">
         <el-menu-item index="2">
           <el-icon><document /></el-icon>
-          <template #title>全部笔记</template>
+          <template #title>我的笔记</template>
         </el-menu-item>
       </NuxtLink>
 
@@ -125,6 +135,6 @@
     width: 100%;
   }
   .el-border-radius {
-    --el-border-radius-base: 12px;
+    --el-border-radius-base: 8px;
   }
 </style>

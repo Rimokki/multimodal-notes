@@ -1,10 +1,33 @@
 <template>
-  <EditorContent :editor="editor" />
+  <div>
+    <ClientOnly>
+      <Teleport to="#toolbar-target">
+        <EditorToolbar v-if="editor" :editor="editor" />
+      </Teleport>
+    </ClientOnly>
+
+    <EditorContent :editor="editor" />
+
+    <ClientOnly>
+      <Teleport to="#editor-character-count">
+        <span v-if="editor" class="text-gray-400 text-xs z-10">
+          {{ editor.storage.characterCount.characters() }}字
+        </span>
+      </Teleport>
+    </ClientOnly>
+  </div>
 </template>
 
 <script setup>
   import { useEditor, EditorContent } from '@tiptap/vue-3'
+  import { CharacterCount, Placeholder } from '@tiptap/extensions'
   import StarterKit from '@tiptap/starter-kit'
+  import Link from '@tiptap/extension-link'
+  import Image from '@tiptap/extension-image'
+  import TextAlign from '@tiptap/extension-text-align'
+  import Superscript from '@tiptap/extension-superscript'
+  import Subscript from '@tiptap/extension-subscript'
+  import Highlight from '@tiptap/extension-highlight'
 
   const text = defineModel({
     type: String,
@@ -13,7 +36,23 @@
 
   const editor = useEditor({
     content: text.value,
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit,
+      CharacterCount,
+      Image,
+      Superscript,
+      Subscript,
+      Highlight,
+      Placeholder.configure({
+        placeholder: '请输入内容',
+      }),
+      Link.configure({
+        openOnClick: false,
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+    ],
     // Don't render on the server, only on the client after hydration
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
@@ -23,6 +62,14 @@
       // JSON
       // text.value = editor.getJSON()
     },
+  })
+
+  const focus = () => {
+    editor.value?.commands.focus()
+  }
+
+  defineExpose({
+    focus,
   })
 
   watch(
@@ -42,3 +89,18 @@
     },
   )
 </script>
+
+<style lang="postcss" scoped>
+  :deep(.ProseMirror) {
+    outline: none;
+    min-height: 300px;
+  }
+
+  :deep(.is-editor-empty:first-child::before) {
+    color: #adb5bd;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+</style>
