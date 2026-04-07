@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './rich-content.css';
 
 @source "./app/**/*.{vue,js,ts,jsx,tsx}";
 @source "./pages/**/*.vue";

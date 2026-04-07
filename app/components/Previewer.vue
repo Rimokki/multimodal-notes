@@ -1,6 +1,6 @@
 <template>
   <div>
-    <EditorContent :editor="previewEditor" />
+    <EditorContent :editor="previewEditor" class="note-rich-content" />
   </div>
 </template>
 
@@ -8,6 +8,13 @@
   import { watch } from 'vue'
   import { useEditor, EditorContent } from '@tiptap/vue-3'
   import StarterKit from '@tiptap/starter-kit'
+  import Link from '@tiptap/extension-link'
+  import Image from '@tiptap/extension-image'
+  import TextAlign from '@tiptap/extension-text-align'
+  import Superscript from '@tiptap/extension-superscript'
+  import Subscript from '@tiptap/extension-subscript'
+  import Highlight from '@tiptap/extension-highlight'
+  import Heading from '@tiptap/extension-heading'
 
   const props = defineProps({
     content: {
@@ -17,9 +24,27 @@
   })
 
   const previewEditor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit.configure({
+        heading: false,
+      }),
+      Image,
+      Superscript,
+      Subscript,
+      Highlight,
+      Heading.configure({
+        levels: [1, 2, 3],
+      }),
+      Link.configure({
+        openOnClick: true,
+      }),
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+      }),
+    ],
     editable: false,
     content: props.content,
+    immediatelyRender: false,
   })
 
   watch(

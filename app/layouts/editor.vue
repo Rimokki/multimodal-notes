@@ -22,7 +22,7 @@
 
 <template>
   <div class="flex h-screen overflow-hidden">
-    <div class="w-1/7 border-r border-gray-200">left</div>
+    <div class="w-1/6 border-r border-gray-200">left</div>
     <div class="flex-1 flex flex-col">
       <div class="h-14 flex items-center justify-between px-10! border-b border-gray-200">
         <div class="ml-4 font-bold text-lg text-gray-600 flex items-center">

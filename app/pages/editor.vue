@@ -15,7 +15,7 @@
 </script>
 
 <template>
-  <div class="w-3xl mx-auto -translate-x-24">
+  <div class="w-3xl mx-auto">
     <div class="mb-4!">
       <el-input
         v-if="isEditing"

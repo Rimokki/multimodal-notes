@@ -20,7 +20,6 @@
     Heading1,
     Heading2,
     Heading3,
-    Heading4,
     ChevronDown,
     List,
     ListOrdered,
@@ -120,12 +119,6 @@
               :class="{ 'text-[#00dc82]! bg-gray-100!': editor.isActive('heading', { level: 3 }) }"
             >
               <div class="flex items-center gap-2 py-1"><Heading3 :size="18" /> 标题3</div>
-            </el-dropdown-item>
-            <el-dropdown-item
-              command="4"
-              :class="{ 'text-[#00dc82]! bg-gray-100!': editor.isActive('heading', { level: 4 }) }"
-            >
-              <div class="flex items-center gap-2 py-1"><Heading4 :size="18" /> 标题4</div>
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>

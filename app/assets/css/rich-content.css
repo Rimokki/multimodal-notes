@@ -1,0 +1,43 @@
+.note-rich-content .ProseMirror {
+  outline: none;
+  min-height: 300px;
+}
+
+.note-rich-content .ProseMirror h1,
+.note-rich-content .ProseMirror h2,
+.note-rich-content .ProseMirror h3,
+.note-rich-content .ProseMirror h4,
+.note-rich-content .ProseMirror h5,
+.note-rich-content .ProseMirror h6 {
+  line-height: 1.1;
+  margin-top: 2.5rem;
+  text-wrap: pretty;
+}
+
+.note-rich-content .ProseMirror h1,
+.note-rich-content .ProseMirror h2 {
+  margin-top: 3rem;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+}
+
+.note-rich-content .ProseMirror h1 {
+  font-size: 2rem;
+}
+
+.note-rich-content .ProseMirror h2 {
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+}
+
+.note-rich-content .ProseMirror h3 {
+  font-size: 1.3rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.note-rich-content .ProseMirror h4,
+.note-rich-content .ProseMirror h5,
+.note-rich-content .ProseMirror h6 {
+  font-size: 1rem;
+}

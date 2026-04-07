@@ -6,7 +6,7 @@
       </Teleport>
     </ClientOnly>
 
-    <EditorContent :editor="editor" />
+    <EditorContent :editor="editor" class="note-rich-content" />
 
     <ClientOnly>
       <Teleport to="#editor-character-count">
@@ -28,6 +28,7 @@
   import Superscript from '@tiptap/extension-superscript'
   import Subscript from '@tiptap/extension-subscript'
   import Highlight from '@tiptap/extension-highlight'
+  import Heading from '@tiptap/extension-heading'
 
   const text = defineModel({
     type: String,
@@ -37,12 +38,17 @@
   const editor = useEditor({
     content: text.value,
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        heading: false,
+      }),
       CharacterCount,
       Image,
       Superscript,
       Subscript,
       Highlight,
+      Heading.configure({
+        levels: [1, 2, 3],
+      }),
       Placeholder.configure({
         placeholder: '请输入内容',
       }),
@@ -91,11 +97,6 @@
 </script>
 
 <style lang="postcss" scoped>
-  :deep(.ProseMirror) {
-    outline: none;
-    min-height: 300px;
-  }
-
   :deep(.is-editor-empty:first-child::before) {
     color: #adb5bd;
     content: attr(data-placeholder);
