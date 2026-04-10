@@ -1,0 +1,154 @@
+type AuthUser = {
+  id: number
+  email: string
+  username: string | null
+  displayName: string | null
+  avatarUrl: string | null
+  isActive: boolean
+  lastLoginAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+type AuthSessionPayload = {
+  user: AuthUser
+  accessToken: string
+  accessTokenExpiresInSec?: number
+}
+
+type AuthStorage = {
+  user: AuthUser | null
+  accessToken: string | null
+  accessTokenExpiresAt: number | null
+}
+
+const AUTH_STORAGE_KEY = 'mn.auth.session'
+
+export const useAuthStore = defineStore('auth', () => {
+  const user = ref<AuthUser | null>(null)
+  const accessToken = ref<string | null>(null)
+  const accessTokenExpiresAt = ref<number | null>(null)
+  const hydrated = ref(false)
+
+  const isLoggedIn = computed(() => Boolean(user.value && accessToken.value))
+  const accountName = computed(() => {
+    return user.value?.displayName || user.value?.username || ''
+  })
+
+  const authHeader = computed(() => {
+    if (!accessToken.value) return null
+    return `Bearer ${accessToken.value}`
+  })
+
+  const persist = () => {
+    if (!import.meta.client) return
+    const payload: AuthStorage = {
+      user: user.value,
+      accessToken: accessToken.value,
+      accessTokenExpiresAt: accessTokenExpiresAt.value,
+    }
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(payload))
+  }
+
+  const clearPersisted = () => {
+    if (!import.meta.client) return
+    localStorage.removeItem(AUTH_STORAGE_KEY)
+  }
+
+  const hydrate = () => {
+    if (!import.meta.client || hydrated.value) return
+
+    try {
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY)
+      if (!raw) {
+        hydrated.value = true
+        return
+      }
+
+      const parsed = JSON.parse(raw) as AuthStorage
+      user.value = parsed.user ?? null
+      accessToken.value = parsed.accessToken ?? null
+      accessTokenExpiresAt.value = parsed.accessTokenExpiresAt ?? null
+    } catch {
+      clearPersisted()
+      user.value = null
+      accessToken.value = null
+      accessTokenExpiresAt.value = null
+    } finally {
+      hydrated.value = true
+    }
+  }
+
+  const setSession = (payload: AuthSessionPayload) => {
+    user.value = payload.user
+    accessToken.value = payload.accessToken
+    accessTokenExpiresAt.value = payload.accessTokenExpiresInSec
+      ? Date.now() + payload.accessTokenExpiresInSec * 1000
+      : null
+    persist()
+  }
+
+  const clearSession = () => {
+    user.value = null
+    accessToken.value = null
+    accessTokenExpiresAt.value = null
+    clearPersisted()
+  }
+
+  const fetchMe = async () => {
+    if (!authHeader.value) {
+      clearSession()
+      return
+    }
+
+    const response = await $fetch<{ user: AuthUser }>('/api/auth/me', {
+      headers: {
+        Authorization: authHeader.value,
+      },
+    })
+
+    user.value = response.user
+    persist()
+  }
+
+  const refreshSession = async () => {
+    const response = await $fetch<AuthSessionPayload>('/api/auth/refresh', {
+      method: 'POST',
+    })
+    setSession(response)
+  }
+
+  const initialize = async () => {
+    hydrate()
+    if (!accessToken.value) return
+
+    try {
+      await fetchMe()
+    } catch (error: any) {
+      if (error?.status === 401 || error?.data?.statusCode === 401) {
+        try {
+          await refreshSession()
+          await fetchMe()
+          return
+        } catch {
+          clearSession()
+          return
+        }
+      }
+      clearSession()
+    }
+  }
+
+  return {
+    user,
+    accessToken,
+    accessTokenExpiresAt,
+    hydrated,
+    isLoggedIn,
+    accountName,
+    setSession,
+    clearSession,
+    hydrate,
+    initialize,
+  }
+})

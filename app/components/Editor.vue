@@ -15,10 +15,17 @@
         </span>
       </Teleport>
     </ClientOnly>
+
+    <ClientOnly>
+      <Teleport to="#toc-target">
+        <ToC v-if="editor" :editor="editor" :items="tocItems" />
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
 <script setup>
+  import { ref } from 'vue'
   import { useEditor, EditorContent } from '@tiptap/vue-3'
   import { CharacterCount, Placeholder } from '@tiptap/extensions'
   import StarterKit from '@tiptap/starter-kit'
@@ -29,11 +36,14 @@
   import Subscript from '@tiptap/extension-subscript'
   import Highlight from '@tiptap/extension-highlight'
   import Heading from '@tiptap/extension-heading'
+  import { getHierarchicalIndexes, TableOfContents } from '@tiptap/extension-table-of-contents'
 
   const text = defineModel({
     type: String,
     default: '',
   })
+
+  const tocItems = ref([])
 
   const editor = useEditor({
     content: text.value,
@@ -57,6 +67,15 @@
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
+      }),
+      TableOfContents.configure({
+        getIndex: getHierarchicalIndexes,
+        scrollParent: () => {
+          return document.getElementById('editor-scroll-container') || window
+        },
+        onUpdate: (anchors) => {
+          tocItems.value = anchors
+        },
       }),
     ],
     // Don't render on the server, only on the client after hydration

@@ -13,6 +13,24 @@
     Expand,
   } from '@element-plus/icons-vue'
 
+  import { LogIn, LogOut, User } from 'lucide-vue-next'
+
+  type AuthResponse = {
+    user: {
+      id: number
+      email: string
+      username: string | null
+      displayName: string | null
+      avatarUrl: string | null
+      isActive: boolean
+      lastLoginAt: string | null
+      createdAt: string
+      updatedAt: string
+    }
+    accessToken: string
+    accessTokenExpiresInSec: number
+  }
+
   const isCollapse = ref(false)
   const fullscreenLoading = ref(false)
   const isDialogVisible = ref(false)
@@ -29,6 +47,17 @@
   })
   const route = useRoute()
   const router = useRouter()
+  const authStore = useAuthStore()
+
+  const defaultAvatarUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+
+  const userAvatar = computed(() => authStore.user?.avatarUrl || defaultAvatarUrl)
+  const menuDisplayName = computed(() => {
+    return authStore.user?.displayName || authStore.user?.username || '未命名用户'
+  })
+  const menuSubLabel = computed(() => {
+    return authStore.user?.email || '普通用户'
+  })
 
   const isLoginMode = computed(() => authMode.value === 'login')
   const authTitle = computed(() => (isLoginMode.value ? '登录' : '注册'))
@@ -134,7 +163,7 @@
   }
 
   const submitLogin = async () => {
-    await $fetch('/api/auth/login', {
+    return await $fetch<AuthResponse>('/api/auth/login', {
       method: 'POST',
       body: {
         email: authForm.email.trim(),
@@ -144,7 +173,7 @@
   }
 
   const submitRegister = async () => {
-    await $fetch('/api/auth/register', {
+    return await $fetch<AuthResponse>('/api/auth/register', {
       method: 'POST',
       body: {
         email: authForm.email.trim(),
@@ -178,7 +207,8 @@
     if (!passed) return
     authLoading.value = true
     try {
-      await submitLogin()
+      const response = await submitLogin()
+      authStore.setSession(response)
       ElMessage.success('登录成功')
       closeAuthDialog()
     } catch (error: any) {
@@ -198,7 +228,8 @@
     if (!passed) return
     authLoading.value = true
     try {
-      await submitRegister()
+      const response = await submitRegister()
+      authStore.setSession(response)
       ElMessage.success('注册成功，已为你自动登录')
       closeAuthDialog()
     } catch (error: any) {
@@ -215,6 +246,32 @@
       router.push('/editor')
     }, 600)
   }
+
+  const handleAvatarLogout = async () => {
+    try {
+      await $fetch('/api/auth/logout', {
+        method: 'POST',
+      })
+      ElMessage.success('已退出登录')
+    } catch (error: any) {
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '退出失败')
+    } finally {
+      authStore.clearSession()
+    }
+  }
+
+  const handleAvatarMenuCommand = async (command: string) => {
+    if (command === 'logout') {
+      await handleAvatarLogout()
+      return
+    }
+
+    ElMessage.info('该功能为占位项，后续可直接扩展')
+  }
+
+  onMounted(async () => {
+    await authStore.initialize()
+  })
 </script>
 
 <template>
@@ -222,14 +279,100 @@
     class="sidebar-container relative h-screen bg-gray-100 transition-all duration-300 ease-in-out group"
     :style="{ width: isCollapse ? '64px' : '256px' }"
   >
-    <div class="h-14 flex items-center justify-evenly overflow-hidden whitespace-nowrap">
-      <span v-if="!isCollapse" class="font-bold text-gray-700 text-lg">Multimodal-Notes</span>
-      <el-avatar
-        :size="36"
-        src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"
-        class="cursor-pointer"
-        @click="openLoginDialog"
-      />
+    <div class="h-14 flex items-center justify-around overflow-hidden whitespace-nowrap px-3">
+      <span v-if="!isCollapse" class="font-bold text-gray-700">Multimodal-Notes</span>
+
+      <template v-if="!isCollapse">
+        <div class="account-status flex justify-evenly gap-2">
+          <el-button
+            v-if="!authStore.isLoggedIn"
+            size="default"
+            type="primary"
+            @click="openLoginDialog"
+          >
+            登录
+          </el-button>
+          <el-dropdown
+            v-else
+            trigger="hover"
+            placement="bottom-start"
+            :show-arrow="false"
+            popper-class="avatar-menu-popper"
+            @command="handleAvatarMenuCommand"
+          >
+            <el-avatar :size="36" :src="userAvatar" class="cursor-pointer" />
+            <template #dropdown>
+              <el-dropdown-menu class="font-medium">
+                <el-dropdown-item disabled class="user-menu-header">
+                  <div class="user-menu-profile">
+                    <el-avatar :size="40" :src="userAvatar" />
+                    <div class="user-menu-text">
+                      <div class="user-menu-name">{{ menuDisplayName }}</div>
+                      <div class="user-menu-sub">{{ menuSubLabel }}</div>
+                    </div>
+                  </div>
+                </el-dropdown-item>
+                <el-dropdown-item command="profile" class="flex items-center gap-2 py-1"
+                  ><User :size="16" />个人中心</el-dropdown-item
+                >
+                <el-dropdown-item
+                  divided
+                  command="logout"
+                  class="logout-item flex items-center gap-2 py-1"
+                >
+                  <LogOut :size="16" /> 退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </template>
+
+      <template v-else>
+        <el-button
+          v-if="!authStore.isLoggedIn"
+          size="small"
+          circle
+          type="primary"
+          class="login-mini-btn"
+          @click="openLoginDialog"
+        >
+          <LogIn :size="16" />
+        </el-button>
+        <el-dropdown
+          v-else
+          trigger="hover"
+          placement="bottom-start"
+          :show-arrow="false"
+          popper-class="avatar-menu-popper"
+          @command="handleAvatarMenuCommand"
+        >
+          <el-avatar :size="32" :src="userAvatar" class="cursor-pointer" />
+          <template #dropdown>
+            <el-dropdown-menu class="font-medium">
+              <el-dropdown-item disabled class="user-menu-header">
+                <div class="user-menu-profile">
+                  <el-avatar :size="40" :src="userAvatar" />
+                  <div class="user-menu-text">
+                    <div class="user-menu-name">{{ menuDisplayName }}</div>
+                    <div class="user-menu-sub">{{ menuSubLabel }}</div>
+                  </div>
+                </div>
+              </el-dropdown-item>
+              <el-dropdown-item command="profile" class="flex items-center gap-2 py-1"
+                ><User :size="16" /> 个人中心</el-dropdown-item
+              >
+              <el-dropdown-item
+                divided
+                command="logout"
+                class="logout-item flex items-center gap-2 py-1"
+              >
+                <LogOut :size="16" /> 退出登录
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </template>
     </div>
     <div class="flex justify-evenly my-2!">
       <el-input
@@ -420,6 +563,82 @@
 
   .el-border-radius {
     --el-border-radius-base: 8px;
+  }
+
+  .account-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .account-name {
+    font-size: 14px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .login-mini-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+
+  :deep(.avatar-menu-popper) {
+    min-width: 170px;
+  }
+
+  :deep(.avatar-menu-popper .user-menu-header) {
+    opacity: 1;
+    cursor: default;
+    border-bottom: 1px solid #f3f4f6;
+    margin-bottom: 2px;
+    padding: 10px 12px;
+  }
+
+  :deep(.avatar-menu-popper .user-menu-header:hover) {
+    background-color: #ffffff;
+  }
+
+  .user-menu-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .user-menu-text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .user-menu-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  .user-menu-sub {
+    font-size: 12px;
+    color: #6b7280;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px;
+  }
+
+  :deep(.avatar-menu-popper .logout-item) {
+    color: #dc2626;
+  }
+
+  :deep(.avatar-menu-popper .logout-item:hover) {
+    background-color: #fef2f2;
   }
 
   .auth-dialog {

@@ -16,13 +16,19 @@
   }
 
   const goBack = () => {
-    router.back()
+    router.push('/')
   }
 </script>
 
 <template>
   <div class="flex h-screen overflow-hidden">
-    <div class="w-1/6 border-r border-gray-200">left</div>
+    <div class="w-1/6 border-r border-gray-200 flex flex-col min-h-0">
+      <div class="my-6 mx-6 flex items-center justify-between">
+        <span class="font-bold text-xl text-gray-500">目录</span>
+        <div id="toc-actions-target" />
+      </div>
+      <div id="toc-target" class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden pb-4" />
+    </div>
     <div class="flex-1 flex flex-col">
       <div class="h-14 flex items-center justify-between px-10! border-b border-gray-200">
         <div class="ml-4 font-bold text-lg text-gray-600 flex items-center">
@@ -48,9 +54,42 @@
       <!-- 字数统计挂载点 -->
       <div v-show="isEditing" id="editor-character-count" class="fixed bottom-1 ml-2!" />
 
-      <div class="flex-1 py-10! overflow-auto flex justify-center">
+      <div id="editor-scroll-container" class="flex-1 py-10! overflow-auto flex justify-center">
         <slot />
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+  #toc-target,
+  #editor-scroll-container {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  #toc-target::-webkit-scrollbar,
+  #editor-scroll-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  #toc-target::-webkit-scrollbar-track,
+  #editor-scroll-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #toc-target::-webkit-scrollbar-thumb,
+  #editor-scroll-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  #toc-target::-webkit-scrollbar-thumb:hover,
+  #editor-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+    background-clip: content-box;
+  }
+</style>

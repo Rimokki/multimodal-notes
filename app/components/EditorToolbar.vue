@@ -24,6 +24,9 @@
     List,
     ListOrdered,
     Quote,
+    Grid2X2Plus,
+    ImagePlus,
+    AudioLines,
   } from 'lucide-vue-next'
 
   const props = defineProps<{
@@ -54,6 +57,10 @@
       .focus()
       .toggleHeading({ level: Number(level) as any })
       .run()
+  }
+
+  const handleInsertContents = (command: string) => {
+    console.log('Insert command:', command)
   }
 </script>
 
@@ -378,6 +385,30 @@
           <AlignJustify :size="18" />
         </button>
       </el-tooltip>
+    </div>
+
+    <div class="divider" />
+
+    <div class="flex items-center gap-1 mx-2">
+      <el-dropdown trigger="click" @command="handleInsertContents">
+        <button class="toolbar-btn">
+          <Grid2X2Plus :size="18" />
+          <ChevronDown :size="14" class="ml-1.5 opacity-70" />
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="1">
+              <div class="flex items-center gap-3 py-1"><ImagePlus :size="18" /> 图片</div>
+            </el-dropdown-item>
+            <el-dropdown-item command="2">
+              <div class="flex items-center gap-3 py-1"><AudioLines :size="18" /> 音频</div>
+            </el-dropdown-item>
+            <el-dropdown-item command="3">
+              <div class="flex items-center gap-3 py-1"><Heading3 :size="18" /> 标题3</div>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </div>
 </template>
