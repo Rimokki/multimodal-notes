@@ -3,19 +3,111 @@
     layout: 'editor',
   })
 
+  const route = useRoute()
+  const router = useRouter()
+  const authStore = useAuthStore()
+  const { getNote, createNote, updateNote } = useNotesApi()
+
   const isEditing = useState('isEditing')
 
+  const noteId = useState<number | null>('activeNoteId', () => null)
   const title = useState('noteTitle', () => '')
+  const isFavorite = useState('noteIsFavorite', () => false)
+  const saveStatus = useState<'idle' | 'saving' | 'saved' | 'error'>('noteSaveStatus', () => 'idle')
   const content = ref('')
   const editorRef = ref()
+  const loading = ref(true)
+  const bootstrapping = ref(true)
+  const saveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
   const onTitleEnter = () => {
     editorRef.value?.focus()
   }
+
+  const saveNow = async () => {
+    if (!noteId.value || bootstrapping.value) {
+      return
+    }
+
+    try {
+      saveStatus.value = 'saving'
+      const { note } = await updateNote(noteId.value, {
+        title: title.value,
+        content: content.value,
+      })
+      title.value = note.title
+      isFavorite.value = note.isFavorite
+      saveStatus.value = 'saved'
+    } catch {
+      saveStatus.value = 'error'
+    }
+  }
+
+  const queueSave = () => {
+    if (saveTimer.value) {
+      clearTimeout(saveTimer.value)
+    }
+
+    saveTimer.value = setTimeout(() => {
+      saveNow()
+    }, 800)
+  }
+
+  watch([title, content], () => {
+    if (bootstrapping.value || !noteId.value) {
+      return
+    }
+    queueSave()
+  })
+
+  onBeforeUnmount(() => {
+    if (saveTimer.value) {
+      clearTimeout(saveTimer.value)
+    }
+  })
+
+  onMounted(async () => {
+    await authStore.initialize()
+    if (!authStore.isLoggedIn) {
+      ElMessage.warning('请先登录后再编辑笔记')
+      await router.push('/')
+      return
+    }
+
+    const rawId = Number(route.query.id)
+
+    try {
+      if (Number.isInteger(rawId) && rawId > 0) {
+        const { note } = await getNote(rawId)
+        noteId.value = note.id
+        title.value = note.title
+        content.value = note.content
+        isFavorite.value = note.isFavorite
+      } else {
+        const { note } = await createNote({
+          title: '无标题笔记',
+          content: '',
+        })
+        noteId.value = note.id
+        title.value = note.title
+        content.value = note.content
+        isFavorite.value = note.isFavorite
+        await router.replace(`/editor?id=${note.id}`)
+      }
+
+      saveStatus.value = 'saved'
+    } catch (error: any) {
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载笔记失败')
+      await router.push('/my-notes')
+    } finally {
+      bootstrapping.value = false
+      loading.value = false
+    }
+  })
 </script>
 
 <template>
-  <div class="w-3xl mx-auto">
+  <div v-loading="loading" class="w-3xl mx-auto">
     <div class="mb-4!">
       <el-input
         v-if="isEditing"
@@ -37,11 +129,11 @@
       </h1>
     </div>
 
-    <div v-show="isEditing">
+    <div v-show="!loading && isEditing">
       <Editor ref="editorRef" v-model="content" />
     </div>
 
-    <div v-show="!isEditing">
+    <div v-show="!loading && !isEditing">
       <Previewer :content="content" />
     </div>
   </div>

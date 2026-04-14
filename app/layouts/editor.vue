@@ -1,14 +1,38 @@
 <script setup lang="ts">
-  import { Star } from '@element-plus/icons-vue'
+  import { StarFilled } from '@element-plus/icons-vue'
 
   const router = useRouter()
+  const { toggleFavorite } = useNotesApi()
   const noteTitleVal = useState('noteTitle')
+  const noteId = useState<number | null>('activeNoteId', () => null)
+  const noteIsFavorite = useState('noteIsFavorite', () => false)
+  const noteSaveStatus = useState<'idle' | 'saving' | 'saved' | 'error'>(
+    'noteSaveStatus',
+    () => 'idle',
+  )
   const noteTitle = computed(() => noteTitleVal.value || '无标题笔记')
-  const isMarked = ref(false)
   const isEditing = useState('isEditing', () => true)
+  const isMarked = computed(() => noteIsFavorite.value)
+  const saveStatusText = computed(() => {
+    if (noteSaveStatus.value === 'saving') return '保存中...'
+    if (noteSaveStatus.value === 'saved') return '已保存'
+    if (noteSaveStatus.value === 'error') return '保存失败'
+    return ''
+  })
 
-  const toggleMark = () => {
-    isMarked.value = !isMarked.value
+  const toggleMark = async () => {
+    if (!noteId.value) {
+      ElMessage.warning('当前笔记尚未初始化')
+      return
+    }
+
+    try {
+      const { note } = await toggleFavorite(noteId.value)
+      noteIsFavorite.value = note.isFavorite
+      ElMessage.success(note.isFavorite ? '已收藏' : '已取消收藏')
+    } catch (error: any) {
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '收藏操作失败')
+    }
   }
 
   const toggleEditMode = () => {
@@ -36,10 +60,18 @@
           <span class="font-normal text-sm ml-4! text-gray-400">
             {{ isEditing ? '编辑模式' : '预览模式' }}
           </span>
+          <span v-if="saveStatusText" class="font-normal text-sm ml-3! text-gray-400">
+            {{ saveStatusText }}
+          </span>
         </div>
 
         <div class="mr-4">
-          <el-button :type="isMarked ? 'primary' : ''" :icon="Star" circle @click="toggleMark" />
+          <el-button
+            :type="isMarked ? 'warning' : ''"
+            :icon="StarFilled"
+            circle
+            @click="toggleMark"
+          />
           <el-button>分享</el-button>
           <el-button :type="isEditing ? '' : 'primary'" @click="toggleEditMode">
             {{ isEditing ? '预览' : '编辑' }}

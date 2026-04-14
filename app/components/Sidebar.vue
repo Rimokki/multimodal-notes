@@ -48,6 +48,7 @@
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()
+  const { createNote } = useNotesApi()
 
   const defaultAvatarUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
 
@@ -239,12 +240,25 @@
     }
   }
 
-  const handleCreateNote = () => {
+  const handleCreateNote = async () => {
+    if (!authStore.isLoggedIn) {
+      ElMessage.warning('请先登录后再创建笔记')
+      openLoginDialog()
+      return
+    }
+
     fullscreenLoading.value = true
-    setTimeout(() => {
+    try {
+      const { note } = await createNote({
+        title: '无标题笔记',
+        content: '',
+      })
+      await router.push(`/editor?id=${note.id}`)
+    } catch (error: any) {
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '创建笔记失败')
+    } finally {
       fullscreenLoading.value = false
-      router.push('/editor')
-    }, 600)
+    }
   }
 
   const handleAvatarLogout = async () => {

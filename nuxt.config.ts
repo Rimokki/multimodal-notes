@@ -28,6 +28,27 @@ export default defineNuxtConfig({
   },
   vite: {
     plugins: [tailwindcss() as any],
+    optimizeDeps: {
+      include: [
+        'dayjs',
+        'dayjs/plugin/*.js',
+        'lodash-unified',
+        '@element-plus/icons-vue',
+        'lucide-vue-next',
+        '@tiptap/vue-3',
+        '@tiptap/extensions',
+        '@tiptap/starter-kit',
+        '@tiptap/extension-link',
+        '@tiptap/extension-image',
+        '@tiptap/extension-text-align',
+        '@tiptap/extension-superscript',
+        '@tiptap/extension-subscript',
+        '@tiptap/extension-highlight',
+        '@tiptap/extension-heading',
+        '@tiptap/extension-table-of-contents',
+        '@tiptap/pm/state',
+      ],
+    },
     css: {
       preprocessorOptions: {
         scss: {
