@@ -66,14 +66,18 @@
     isLoginMode.value ? '登录以持久化保存笔记' : '使用邮箱创建新账号',
   )
 
+  const searchQuery = ref('')
+
+  const menuRouteMap: Record<string, string> = {
+    '/': '1',
+    '/my-notes': '2',
+    '/favourite': '3',
+    '/recycle-bin': '4',
+    '/settings': '5',
+  }
+
   const activeIndex = computed(() => {
-    const path = route.path
-    if (path === '/') return '1'
-    if (path.startsWith('/my-notes')) return '2'
-    if (path.startsWith('/favourite')) return '3'
-    if (path.startsWith('/recycle-bin')) return '4'
-    if (path.startsWith('/settings')) return '5'
-    return '1'
+    return menuRouteMap[route.path] || ''
   })
 
   const toggleCollapse = () => {
@@ -242,7 +246,7 @@
 
   const handleCreateNote = async () => {
     if (!authStore.isLoggedIn) {
-      ElMessage.warning('请先登录后再创建笔记')
+      ElMessage.warning('请先登录以继续操作')
       openLoginDialog()
       return
     }
@@ -281,6 +285,20 @@
     }
 
     ElMessage.info('该功能为占位项，后续可直接扩展')
+  }
+
+  const handleSearch = () => {
+    if (!authStore.isLoggedIn) {
+      ElMessage.warning('请先登录')
+      openLoginDialog()
+      return
+    }
+    if (!searchQuery.value.trim()) {
+      ElMessage.warning('请输入搜索关键词')
+      return
+    }
+
+    router.push(`/search-result?query=${encodeURIComponent(searchQuery.value.trim())}`)
   }
 
   onMounted(async () => {
@@ -391,12 +409,14 @@
     <div class="flex justify-evenly my-2!">
       <el-input
         v-if="!isCollapse"
-        readonly
+        v-model="searchQuery"
         style="width: 180px; height: 36px"
         size="large"
         placeholder="搜索"
+        clearable
         class="el-border-radius rounded-input-12"
         :prefix-icon="Search"
+        @keyup.enter="handleSearch"
       />
       <el-tooltip content="新建笔记" placement="bottom" effect="light">
         <el-button

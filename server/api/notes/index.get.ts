@@ -35,11 +35,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (keyword) {
-    where.OR = [
-      { title: { contains: keyword } },
-      { content: { contains: keyword } },
-      { rawText: { contains: keyword } },
-    ]
+    where.OR = [{ title: { contains: keyword } }, { rawText: { contains: keyword } }]
   }
 
   const [notes, total] = await prisma.$transaction([

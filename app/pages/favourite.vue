@@ -6,6 +6,7 @@
   const { listNotes, toggleFavorite } = useNotesApi()
 
   const loading = ref(false)
+  const notesLoaded = ref(false)
   const notes = ref<NoteItem[]>([])
   const total = ref(0)
   const currentPage = ref(1)
@@ -16,6 +17,7 @@
     if (!authStore.isLoggedIn) {
       notes.value = []
       total.value = 0
+      notesLoaded.value = false
       return
     }
 
@@ -29,6 +31,7 @@
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载收藏失败')
     } finally {
+      notesLoaded.value = true
       loading.value = false
     }
   }
@@ -73,12 +76,18 @@
   <div class="max-w-5xl mx-auto px-3">
     <h1 class="font-bold text-2xl mt-2! mb-4!">我的收藏</h1>
 
-    <el-alert v-if="!authStore.isLoggedIn" type="warning" :closable="false" show-icon>
+    <el-alert
+      v-if="!authStore.isLoggedIn"
+      type="warning"
+      :closable="false"
+      show-icon
+      class="font-bold"
+    >
       请先登录后查看收藏
     </el-alert>
 
     <el-empty
-      v-else-if="!loading && notes.length === 0"
+      v-else-if="notesLoaded && !loading && notes.length === 0"
       description="你还没有收藏任何笔记"
       class="min-h-[60vh] flex items-center justify-center"
     />

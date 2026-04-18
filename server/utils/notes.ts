@@ -39,7 +39,6 @@ export function buildNoteExcerpt(content: string): string {
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 120)
 }
 
 function parsePositiveInt(value: unknown): number | null {
