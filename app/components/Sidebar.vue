@@ -284,7 +284,10 @@
       return
     }
 
-    ElMessage.info('该功能为占位项，后续可直接扩展')
+    if (command === 'profile') {
+      await router.push('/personal')
+      return
+    }
   }
 
   const handleSearch = () => {
@@ -308,10 +311,12 @@
 
 <template>
   <div
-    class="sidebar-container relative h-screen bg-gray-100 transition-all duration-300 ease-in-out group"
+    class="sidebar-container relative h-screen bg-[#fafafa] transition-all duration-300 ease-in-out group"
     :style="{ width: isCollapse ? '64px' : '256px' }"
   >
-    <div class="h-14 flex items-center justify-around overflow-hidden whitespace-nowrap px-3">
+    <div
+      class="h-14 flex items-center justify-between overflow-hidden whitespace-nowrap px-5! mt-2!"
+    >
       <span v-if="!isCollapse" class="font-bold text-gray-700">Multimodal-Notes</span>
 
       <template v-if="!isCollapse">
@@ -332,7 +337,7 @@
             popper-class="avatar-menu-popper"
             @command="handleAvatarMenuCommand"
           >
-            <el-avatar :size="36" :src="userAvatar" class="cursor-pointer" />
+            <el-avatar :size="36" :src="userAvatar" class="cursor-pointer translate-x-1.5" />
             <template #dropdown>
               <el-dropdown-menu class="font-medium">
                 <el-dropdown-item disabled class="user-menu-header">
@@ -344,9 +349,9 @@
                     </div>
                   </div>
                 </el-dropdown-item>
-                <el-dropdown-item command="profile" class="flex items-center gap-2 py-1"
-                  ><User :size="16" />个人中心</el-dropdown-item
-                >
+                <el-dropdown-item command="profile" class="flex items-center gap-2 py-1">
+                  <User :size="16" />个人中心
+                </el-dropdown-item>
                 <el-dropdown-item
                   divided
                   command="logout"
@@ -587,7 +592,7 @@
 
 <style scoped>
   .el-menu-vertical {
-    --el-menu-bg-color: #f3f4f6;
+    --el-menu-bg-color: #fafafa;
     --el-menu-border-color: transparent;
   }
 

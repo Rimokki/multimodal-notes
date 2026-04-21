@@ -41,3 +41,42 @@
 .note-rich-content .ProseMirror h6 {
   font-size: 1rem;
 }
+
+.note-rich-content .ProseMirror .file-card a[data-kind='FILE'] {
+  display: block;
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  margin: 10px 0;
+  border: 1px solid #dbe5ef;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #1f2937;
+  text-decoration: none;
+  line-height: 1.45;
+  transition: border-color 0.2s ease;
+}
+
+.note-rich-content .ProseMirror .file-card a[data-kind='FILE']:hover {
+  border-color: #00dc82;
+}
+
+.note-rich-content .ProseMirror .file-card a[data-kind='FILE'] strong {
+  display: inline-block;
+  margin-bottom: 2px;
+  font-size: 0.88rem;
+  color: #4b5563;
+  letter-spacing: 0.01em;
+}
+
+img {
+  display: block;
+  height: auto;
+  margin: 4px 0;
+  max-width: 100%;
+
+  &.ProseMirror-selectednode {
+    outline: 3px solid var(--purple);
+  }
+}

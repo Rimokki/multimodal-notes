@@ -15,6 +15,7 @@
   import Subscript from '@tiptap/extension-subscript'
   import Highlight from '@tiptap/extension-highlight'
   import Heading from '@tiptap/extension-heading'
+  import { FileCard } from '~/extensions/file-card'
 
   const props = defineProps({
     content: {
@@ -29,6 +30,7 @@
         heading: false,
       }),
       Image,
+      FileCard,
       Superscript,
       Subscript,
       Highlight,
@@ -36,7 +38,7 @@
         levels: [1, 2, 3],
       }),
       Link.configure({
-        openOnClick: true,
+        openOnClick: false,
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],

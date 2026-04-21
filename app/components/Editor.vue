@@ -37,6 +37,7 @@
   import Highlight from '@tiptap/extension-highlight'
   import Heading from '@tiptap/extension-heading'
   import { getHierarchicalIndexes, TableOfContents } from '@tiptap/extension-table-of-contents'
+  import { FileCard } from '~/extensions/file-card'
 
   const text = defineModel({
     type: String,
@@ -56,6 +57,7 @@
       Superscript,
       Subscript,
       Highlight,
+      FileCard,
       Heading.configure({
         levels: [1, 2, 3],
       }),

@@ -9,6 +9,31 @@ export type NoteItem = {
   deletedAt: string | null
   createdAt: string
   updatedAt: string
+  assets?: NoteAssetItem[]
+}
+
+export type NoteAssetItem = {
+  id: number
+  noteId: number
+  userId: number
+  kind: 'IMAGE' | 'AUDIO' | 'FILE'
+  sourceType: 'UPLOAD' | 'EXTERNAL'
+  storageKey: string | null
+  url: string
+  mimeType: string
+  fileName: string | null
+  fileExt: string | null
+  sizeBytes: number
+  width: number | null
+  height: number | null
+  durationMs: number | null
+  checksum: string | null
+  ocrText: string | null
+  status: 'PENDING' | 'READY' | 'FAILED'
+  sortOrder: number
+  deletedAt: string | null
+  createdAt: string
+  updatedAt: string
 }
 
 type NotesMode = 'all' | 'favorite' | 'deleted'
@@ -19,6 +44,43 @@ type ListNotesResponse = {
   page: number
   pageSize: number
   totalPages: number
+}
+
+type UploadableFile = {
+  name: string
+  size: number
+  type: string
+  lastModified: number
+  content: string
+}
+
+async function serializeFileToDataUrl(file: File): Promise<UploadableFile> {
+  const content = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        resolve(reader.result)
+        return
+      }
+
+      reject(new Error('Invalid file payload'))
+    }
+
+    reader.onerror = () => {
+      reject(reader.error || new Error('Failed to read file'))
+    }
+
+    reader.readAsDataURL(file)
+  })
+
+  return {
+    name: file.name,
+    size: file.size,
+    type: file.type,
+    lastModified: file.lastModified,
+    content,
+  }
 }
 
 function useAuthHeaderOrThrow() {
@@ -135,6 +197,21 @@ export function useNotesApi() {
     })
   }
 
+  const uploadNoteAsset = async (id: number, file: File) => {
+    const authHeader = useAuthHeaderOrThrow()
+    const payloadFile = await serializeFileToDataUrl(file)
+
+    return await $fetch<{ asset: NoteAssetItem }>(`/api/notes/${id}/assets/upload`, {
+      method: 'POST',
+      body: {
+        file: payloadFile,
+      },
+      headers: {
+        Authorization: authHeader,
+      },
+    })
+  }
+
   return {
     listNotes,
     createNote,
@@ -144,5 +221,6 @@ export function useNotesApi() {
     moveToRecycle,
     restoreNote,
     purgeNote,
+    uploadNoteAsset,
   }
 }

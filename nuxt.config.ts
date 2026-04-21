@@ -1,5 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from '@tailwindcss/vite'
+import { resolve } from 'node:path'
+
+const fileStorageMount = process.env.FILE_STORAGE_MOUNT || resolve(process.cwd(), 'server/userFiles')
 
 export default defineNuxtConfig({
   ssr: false,
@@ -19,7 +22,10 @@ export default defineNuxtConfig({
     autoImport: true,
     dirs: ['composables'],
   },
-  modules: ['@nuxt/eslint', '@element-plus/nuxt', '@pinia/nuxt'],
+  modules: ['@nuxt/eslint', '@element-plus/nuxt', '@pinia/nuxt', 'nuxt-file-storage'],
+  fileStorage: {
+    mount: fileStorageMount,
+  },
   css: ['./app/assets/css/main.css'],
   elementPlus: {
     defaultLocale: 'zh-cn',

@@ -11,6 +11,14 @@ export default defineEventHandler(async (event) => {
       id: noteId,
       userId,
     },
+    include: {
+      assets: {
+        where: {
+          deletedAt: null,
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      },
+    },
   })
 
   if (!note) {

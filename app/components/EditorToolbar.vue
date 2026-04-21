@@ -1,5 +1,6 @@
 <script lang="ts" setup>
   import type { Editor } from '@tiptap/vue-3'
+  import { ref } from 'vue'
   import {
     Undo2,
     Redo2,
@@ -27,11 +28,76 @@
     Grid2X2Plus,
     ImagePlus,
     AudioLines,
+    FilePlusCorner,
   } from 'lucide-vue-next'
 
   const props = defineProps<{
     editor: Editor
   }>()
+
+  type InsertAssetKind = 'IMAGE' | 'AUDIO' | 'FILE'
+
+  const noteId = useState<number | null>('activeNoteId')
+  const { uploadNoteAsset } = useNotesApi()
+  const imageInputRef = ref<HTMLInputElement | null>(null)
+  const audioInputRef = ref<HTMLInputElement | null>(null)
+  const fileInputRef = ref<HTMLInputElement | null>(null)
+  const assetUploading = ref(false)
+
+  const escapeHtml = (value: string) =>
+    value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+
+  const matchExpectedKind = (mimeType: string, expectedKind: InsertAssetKind) => {
+    if (expectedKind === 'IMAGE') {
+      return mimeType.startsWith('image/')
+    }
+    if (expectedKind === 'AUDIO') {
+      return mimeType.startsWith('audio/')
+    }
+    return (
+      mimeType === 'application/pdf' ||
+      mimeType === 'text/plain' ||
+      mimeType === 'text/markdown' ||
+      mimeType === 'text/csv' ||
+      mimeType === 'application/json'
+    )
+  }
+
+  const insertAssetByKind = (kind: InsertAssetKind, url: string, name: string) => {
+    if (kind === 'IMAGE') {
+      props.editor.chain().focus().setImage({ src: url, alt: name, title: name }).run()
+      return
+    }
+
+    const safeName = escapeHtml(name)
+    if (kind === 'AUDIO') {
+      const linkHtml = `<p><a href="${url}?kind=AUDIO" target="_blank" rel="noopener noreferrer">🎵 ${safeName}</a></p>`
+      props.editor.chain().focus().insertContent(linkHtml).run()
+      return
+    }
+
+    props.editor
+      .chain()
+      .focus()
+      .insertContent([
+        {
+          type: 'fileCard',
+          attrs: {
+            href: `${url}?kind=FILE`,
+            title: name,
+          },
+        },
+        {
+          type: 'paragraph',
+        },
+      ])
+      .run()
+  }
 
   // 设置链接
   const setLink = () => {
@@ -60,12 +126,76 @@
   }
 
   const handleInsertContents = (command: string) => {
-    console.log('Insert command:', command)
+    if (command === '1') {
+      imageInputRef.value?.click()
+    } else if (command === '2') {
+      audioInputRef.value?.click()
+    } else if (command === '3') {
+      fileInputRef.value?.click()
+    } else {
+      return
+    }
+  }
+
+  const handleAssetFileChange = async (expectedKind: InsertAssetKind, event: Event) => {
+    const target = event.target as HTMLInputElement | null
+    const file = target?.files?.[0]
+
+    if (target) {
+      target.value = ''
+    }
+
+    if (!file) {
+      return
+    }
+
+    if (!noteId.value) {
+      ElMessage.warning('笔记尚未初始化，暂时无法上传资源')
+      return
+    }
+
+    if (!matchExpectedKind(file.type, expectedKind)) {
+      ElMessage.warning('文件类型与当前插入项不匹配')
+      return
+    }
+
+    try {
+      assetUploading.value = true
+      const { asset } = await uploadNoteAsset(noteId.value, file)
+      insertAssetByKind(asset.kind as InsertAssetKind, asset.url, file.name)
+      ElMessage.success('插入成功')
+    } catch (error: any) {
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '上传失败')
+    } finally {
+      assetUploading.value = false
+    }
   }
 </script>
 
 <template>
   <div class="flex p-2 overflow-x-auto min-h-10 items-center justify-center">
+    <input
+      ref="imageInputRef"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="(event) => handleAssetFileChange('IMAGE', event)"
+    />
+    <input
+      ref="audioInputRef"
+      type="file"
+      accept="audio/*"
+      class="hidden"
+      @change="(event) => handleAssetFileChange('AUDIO', event)"
+    />
+    <input
+      ref="fileInputRef"
+      type="file"
+      accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
+      class="hidden"
+      @change="(event) => handleAssetFileChange('FILE', event)"
+    />
+
     <div class="flex items-center gap-1 mr-2">
       <el-tooltip
         content="撤销"
@@ -391,7 +521,7 @@
 
     <div class="flex items-center gap-1 mx-2">
       <el-dropdown trigger="click" @command="handleInsertContents">
-        <button class="toolbar-btn">
+        <button class="toolbar-btn" :disabled="assetUploading">
           <Grid2X2Plus :size="18" />
           <ChevronDown :size="14" class="ml-1.5 opacity-70" />
         </button>
@@ -404,7 +534,7 @@
               <div class="flex items-center gap-3 py-1"><AudioLines :size="18" /> 音频</div>
             </el-dropdown-item>
             <el-dropdown-item command="3">
-              <div class="flex items-center gap-3 py-1"><Heading3 :size="18" /> 标题3</div>
+              <div class="flex items-center gap-3 py-1"><FilePlusCorner :size="18" /> 文件</div>
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>

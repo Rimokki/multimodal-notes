@@ -24,6 +24,7 @@ model User {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   notes        Note[]
+  assets       NoteAsset[]
   sessions     UserSession[]
 
   @@index([createdAt])
@@ -44,10 +45,28 @@ model UserSession {
   @@index([expiresAt])
 }
 
+enum AssetKind {
+  IMAGE
+  AUDIO
+  FILE
+}
+
+enum AssetSourceType {
+  UPLOAD
+  EXTERNAL
+}
+
+enum AssetStatus {
+  PENDING
+  READY
+  FAILED
+}
+
 model Note {
   id         Int      @id @default(autoincrement())
   userId     Int?
   owner      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  assets     NoteAsset[]
   title      String
   content    String   // Tiptap JSON string
   rawText    String?  // Plain text for search optimization
@@ -60,4 +79,35 @@ model Note {
   @@index([userId, updatedAt])
   @@index([userId, isDeleted, updatedAt])
   @@index([userId, isFavorite, updatedAt])
+}
+
+model NoteAsset {
+  id         Int             @id @default(autoincrement())
+  noteId     Int
+  note       Note            @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind       AssetKind
+  sourceType AssetSourceType @default(UPLOAD)
+  storageKey String?
+  url        String
+  mimeType   String
+  fileName   String?
+  fileExt    String?
+  sizeBytes  Int
+  width      Int?
+  height     Int?
+  durationMs Int?
+  checksum   String?
+  ocrText    String?
+  status     AssetStatus     @default(PENDING)
+  sortOrder  Int             @default(0)
+  deletedAt  DateTime?
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  @@index([noteId, sortOrder])
+  @@index([userId, createdAt])
+  @@index([noteId, kind])
+  @@index([status])
 }

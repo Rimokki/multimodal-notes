@@ -55,6 +55,7 @@
     "@types/node": "^25.5.0",
     "baseline-browser-mapping": "^2.9.19",
     "element-plus": "^2.13.2",
+    "nuxt-file-storage": "^0.3.2",
     "prisma": "^7.6.0"
   }
 }
