@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   import type { Editor } from '@tiptap/vue-3'
-  import { ref } from 'vue'
+  import { onBeforeUnmount, ref } from 'vue'
   import {
     Undo2,
     Redo2,
@@ -29,7 +29,10 @@
     ImagePlus,
     AudioLines,
     FilePlusCorner,
+    ScanText,
+    ImageUp,
   } from 'lucide-vue-next'
+  import { createWorker } from 'tesseract.js'
 
   const props = defineProps<{
     editor: Editor
@@ -42,15 +45,84 @@
   const imageInputRef = ref<HTMLInputElement | null>(null)
   const audioInputRef = ref<HTMLInputElement | null>(null)
   const fileInputRef = ref<HTMLInputElement | null>(null)
+  const ocrImageInputRef = ref<HTMLInputElement | null>(null)
   const assetUploading = ref(false)
+  const ocrDrawerVisible = ref(false)
+  const ocrResult = ref('')
+  const ocrImagePreviewUrl = ref('')
+  const ocrRecognizing = ref(false)
 
-  const escapeHtml = (value: string) =>
-    value
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
+  const revokeOcrPreviewUrl = () => {
+    if (ocrImagePreviewUrl.value) {
+      URL.revokeObjectURL(ocrImagePreviewUrl.value)
+      ocrImagePreviewUrl.value = ''
+    }
+  }
+
+  const triggerOcrImageUpload = () => {
+    ocrImageInputRef.value?.click()
+  }
+
+  const handleOcrImageChange = (event: Event) => {
+    const target = event.target as HTMLInputElement | null
+    const file = target?.files?.[0]
+
+    if (target) {
+      target.value = ''
+    }
+
+    if (!file) {
+      return
+    }
+
+    if (!file.type.startsWith('image/')) {
+      ElMessage.warning('请选择图片文件')
+      return
+    }
+
+    revokeOcrPreviewUrl()
+    ocrImagePreviewUrl.value = URL.createObjectURL(file)
+    runOcrByImage(file)
+  }
+
+  onBeforeUnmount(() => {
+    revokeOcrPreviewUrl()
+  })
+
+  const openOcrDrawer = () => {
+    ocrDrawerVisible.value = true
+  }
+
+  const closeOcrDrawer = () => {
+    ocrDrawerVisible.value = false
+  }
+
+  const handleOcrInsert = () => {
+    if (!ocrResult.value.trim()) {
+      ElMessage.warning('暂无可插入的识别文本')
+      return
+    }
+
+    props.editor.chain().focus().insertContent(ocrResult.value).run()
+    ocrDrawerVisible.value = false
+    ElMessage.success('识别文本已插入')
+  }
+
+  const runOcrByImage = async (imageSource: string | File) => {
+    const worker = await createWorker(['eng', 'chi_sim'])
+
+    try {
+      ocrRecognizing.value = true
+      const { data } = await worker.recognize(imageSource)
+      ocrResult.value = data.text.trim()
+    } catch {
+      ocrResult.value = ''
+      ElMessage.error('文字提取失败，请重试')
+    } finally {
+      ocrRecognizing.value = false
+      await worker.terminate()
+    }
+  }
 
   const matchExpectedKind = (mimeType: string, expectedKind: InsertAssetKind) => {
     if (expectedKind === 'IMAGE') {
@@ -74,10 +146,8 @@
       return
     }
 
-    const safeName = escapeHtml(name)
     if (kind === 'AUDIO') {
-      const linkHtml = `<p><a href="${url}?kind=AUDIO" target="_blank" rel="noopener noreferrer">🎵 ${safeName}</a></p>`
-      props.editor.chain().focus().insertContent(linkHtml).run()
+      props.editor.chain().focus().setAudio({ src: url }).run()
       return
     }
 
@@ -194,6 +264,13 @@
       accept=".pdf,.txt,.md,.csv,.json,application/pdf,text/plain,text/markdown,text/csv,application/json"
       class="hidden"
       @change="(event) => handleAssetFileChange('FILE', event)"
+    />
+    <input
+      ref="ocrImageInputRef"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="handleOcrImageChange"
     />
 
     <div class="flex items-center gap-1 mr-2">
@@ -520,6 +597,18 @@
     <div class="divider" />
 
     <div class="flex items-center gap-1 mx-2">
+      <el-tooltip
+        content="文字提取"
+        placement="bottom"
+        :show-after="200"
+        :show-arrow="false"
+        :offset="4"
+      >
+        <button class="toolbar-btn" @click="openOcrDrawer">
+          <ScanText :size="18" />
+        </button>
+      </el-tooltip>
+
       <el-dropdown trigger="click" @command="handleInsertContents">
         <button class="toolbar-btn" :disabled="assetUploading">
           <Grid2X2Plus :size="18" />
@@ -541,6 +630,66 @@
       </el-dropdown>
     </div>
   </div>
+
+  <el-drawer
+    v-model="ocrDrawerVisible"
+    direction="rtl"
+    size="420px"
+    :append-to-body="true"
+    :show-close="false"
+    class="custom-drawer"
+  >
+    <template #header>
+      <h1 class="font-bold text-lg">文字提取</h1>
+    </template>
+    <template #default>
+      <div class="flex h-full min-h-0 flex-col gap-5">
+        <div
+          v-loading="ocrRecognizing"
+          element-loading-text="正在识别文字，请稍候..."
+          class="flex-1 min-h-0 w-full flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-md gap-4 cursor-pointer"
+          @click="!ocrImagePreviewUrl && triggerOcrImageUpload()"
+        >
+          <template v-if="ocrImagePreviewUrl">
+            <el-image
+              :src="ocrImagePreviewUrl"
+              :preview-src-list="[ocrImagePreviewUrl]"
+              fit="contain"
+              preview-teleported
+              class="h-full w-full rounded-md"
+            />
+            <el-button size="small" class="-translate-y-3" @click.stop="triggerOcrImageUpload"
+              >更换图片</el-button
+            >
+          </template>
+          <template v-else>
+            <ImageUp :size="80" class="text-gray-300" />
+            <p class="text-gray-500">请上传图片，系统将自动识别并提取文字</p>
+          </template>
+        </div>
+
+        <div class="flex-1 min-h-0 w-full">
+          <el-input
+            v-model="ocrResult"
+            class="ocr-result-input h-full w-full"
+            type="textarea"
+            resize="none"
+            :disabled="ocrRecognizing"
+            :input-style="{ height: '100%' }"
+            placeholder="识别文本将显示在这里"
+          />
+        </div>
+      </div>
+    </template>
+    <template #footer>
+      <div class="flex justify-end gap-2">
+        <el-button @click="closeOcrDrawer">取消</el-button>
+        <el-button type="primary" :disabled="ocrRecognizing" @click="handleOcrInsert"
+          >插入</el-button
+        >
+      </div>
+    </template>
+  </el-drawer>
 </template>
 
 <style scoped>
@@ -562,5 +711,19 @@
     .divider {
       @apply w-px h-5 bg-gray-200;
     }
+  }
+</style>
+
+<style>
+  .custom-drawer .el-drawer__header {
+    margin-bottom: 0;
+  }
+
+  .custom-drawer .ocr-result-input .el-textarea__inner {
+    resize: none;
+  }
+
+  .custom-drawer .ocr-result-input .el-textarea {
+    height: 100%;
   }
 </style>

@@ -2,7 +2,8 @@
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'node:path'
 
-const fileStorageMount = process.env.FILE_STORAGE_MOUNT || resolve(process.cwd(), 'server/userFiles')
+const fileStorageMount =
+  process.env.FILE_STORAGE_MOUNT || resolve(process.cwd(), 'server/userFiles')
 
 export default defineNuxtConfig({
   ssr: false,
@@ -53,6 +54,7 @@ export default defineNuxtConfig({
         '@tiptap/extension-heading',
         '@tiptap/extension-table-of-contents',
         '@tiptap/pm/state',
+        '@tiptap/extension-audio',
       ],
     },
     css: {

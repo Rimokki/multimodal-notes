@@ -36,6 +36,7 @@
   import Subscript from '@tiptap/extension-subscript'
   import Highlight from '@tiptap/extension-highlight'
   import Heading from '@tiptap/extension-heading'
+  import Audio from '@tiptap/extension-audio'
   import { getHierarchicalIndexes, TableOfContents } from '@tiptap/extension-table-of-contents'
   import { FileCard } from '~/extensions/file-card'
 
@@ -57,6 +58,7 @@
       Superscript,
       Subscript,
       Highlight,
+      Audio,
       FileCard,
       Heading.configure({
         levels: [1, 2, 3],

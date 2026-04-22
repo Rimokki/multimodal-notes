@@ -21,7 +21,7 @@
     </button>
   </Teleport>
 
-  <div v-if="items.length === 0" class="toc-empty-hint">添加标题后自动生成目录</div>
+  <div v-if="items.length === 0" class="toc-empty-hint">添加内容标题后自动生成目录</div>
 </template>
 
 <script>

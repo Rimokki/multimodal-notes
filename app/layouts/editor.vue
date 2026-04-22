@@ -81,7 +81,11 @@
       </div>
 
       <!-- 菜单栏挂载点 -->
-      <div v-show="isEditing" id="toolbar-target" class="border-b border-gray-200 bg-white z-10" />
+      <div
+        id="toolbar-target"
+        class="border-b border-gray-200 bg-white z-10"
+        :class="{ 'toolbar-hidden': !isEditing }"
+      />
 
       <!-- 字数统计挂载点 -->
       <div v-show="isEditing" id="editor-character-count" class="fixed bottom-1 ml-2!" />
@@ -94,6 +98,26 @@
 </template>
 
 <style scoped>
+  #toolbar-target {
+    overflow: hidden;
+    max-height: 56px;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      max-height 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.24s ease;
+  }
+
+  #toolbar-target.toolbar-hidden {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    border-bottom-color: transparent;
+    pointer-events: none;
+  }
+
   #toc-target,
   #editor-scroll-container {
     scrollbar-width: thin;
