@@ -90,7 +90,7 @@ function useAuthHeaderOrThrow() {
   if (!authHeader) {
     throw createError({
       statusCode: 401,
-      statusMessage: '请先登录后再操作笔记',
+      statusMessage: '请先登录后再操作',
     })
   }
 

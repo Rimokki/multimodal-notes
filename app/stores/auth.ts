@@ -2,7 +2,6 @@ type AuthUser = {
   id: number
   email: string
   username: string | null
-  displayName: string | null
   avatarUrl: string | null
   isActive: boolean
   lastLoginAt: string | null
@@ -32,7 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => Boolean(user.value && accessToken.value))
   const accountName = computed(() => {
-    return user.value?.displayName || user.value?.username || ''
+    return user.value?.username || ''
   })
 
   const authHeader = computed(() => {

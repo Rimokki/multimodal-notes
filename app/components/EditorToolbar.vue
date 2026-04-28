@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   import type { Editor } from '@tiptap/vue-3'
-  import { onBeforeUnmount, ref } from 'vue'
+  import { computed, onBeforeUnmount, ref } from 'vue'
   import {
     Undo2,
     Redo2,
@@ -31,8 +31,18 @@
     FilePlusCorner,
     ScanText,
     ImageUp,
+    Minus,
+    ListCollapse,
+    SquareCheck,
+    ListChevronsUpDown,
+    Baseline,
+    CornerDownLeft,
+    ExternalLink,
+    Trash2,
+    Ban,
   } from 'lucide-vue-next'
   import { createWorker } from 'tesseract.js'
+  import ColorPickerPanel from '~/components/ColorPickerPanel.vue'
 
   const props = defineProps<{
     editor: Editor
@@ -46,11 +56,27 @@
   const audioInputRef = ref<HTMLInputElement | null>(null)
   const fileInputRef = ref<HTMLInputElement | null>(null)
   const ocrImageInputRef = ref<HTMLInputElement | null>(null)
+  const linkInputRef = ref<HTMLInputElement | null>(null)
   const assetUploading = ref(false)
   const ocrDrawerVisible = ref(false)
   const ocrResult = ref('')
   const ocrImagePreviewUrl = ref('')
   const ocrRecognizing = ref(false)
+  const fontColorPopoverVisible = ref(false)
+  const linkPopoverVisible = ref(false)
+  const linkInput = ref('')
+  const linkSelectionRange = ref<{ from: number; to: number } | null>(null)
+  const linkPlaceholderActive = ref(false)
+  const fontSizeOptions = [12, 13, 14, 15, 16, 20, 24, 28, 32, 40, 48]
+  const lineHeightOptions = [
+    { label: '默认', value: 'default' },
+    { label: '1.5', value: 1.5 },
+    { label: '1.75', value: 1.75 },
+    { label: '2', value: 2 },
+    { label: '2.5', value: 2.5 },
+    { label: '3', value: 3 },
+  ]
+  const highlightColors = ['#dcfce7', '#e0f2fe', '#ffe4e6', '#f3e8ff', '#fef9c3']
 
   const revokeOcrPreviewUrl = () => {
     if (ocrImagePreviewUrl.value) {
@@ -169,21 +195,110 @@
       .run()
   }
 
-  // 设置链接
-  const setLink = () => {
-    const previousUrl = props.editor.getAttributes('link').href
-    const url = window.prompt('URL', previousUrl)
+  const getCurrentLink = () => {
+    return (props.editor.getAttributes('link').href || '').trim()
+  }
 
-    if (url === null) {
+  const restoreLinkSelection = () => {
+    if (!linkSelectionRange.value) {
       return
     }
 
-    if (url === '') {
-      props.editor.chain().focus().extendMarkRange('link').unsetLink().run()
+    const { from, to } = linkSelectionRange.value
+    props.editor.chain().focus().setTextSelection({ from, to }).run()
+  }
+
+  const prepareLinkPlaceholder = () => {
+    const { from, to } = props.editor.state.selection
+
+    if (from === to) {
+      linkSelectionRange.value = null
+      linkPlaceholderActive.value = false
       return
     }
 
+    linkSelectionRange.value = { from, to }
+    props.editor
+      .chain()
+      .focus()
+      .setTextSelection({ from, to })
+      .extendMarkRange('link')
+      .setLink({ href: '' })
+      .run()
+    linkPlaceholderActive.value = true
+  }
+
+  const syncLinkInput = () => {
+    linkInput.value = getCurrentLink()
+
+    nextTick(() => {
+      if (linkInputRef.value) {
+        linkInputRef.value.focus()
+      }
+    })
+  }
+
+  const normalizeLinkUrl = (rawUrl: string) => {
+    const value = rawUrl.trim()
+    if (!value) {
+      return ''
+    }
+
+    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value)
+    if (hasProtocol) {
+      return value
+    }
+
+    return `https://${value}`
+  }
+
+  const applyLink = () => {
+    const url = normalizeLinkUrl(linkInput.value)
+
+    if (!url) {
+      ElMessage.warning('请输入链接地址')
+      return
+    }
+
+    restoreLinkSelection()
     props.editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
+    linkInput.value = url
+    linkPlaceholderActive.value = false
+    linkSelectionRange.value = null
+    linkPopoverVisible.value = false
+  }
+
+  const openLink = () => {
+    const target = normalizeLinkUrl(linkInput.value || getCurrentLink())
+
+    if (!target) {
+      ElMessage.warning('暂无可打开的链接')
+      return
+    }
+
+    window.open(target, '_blank', 'noopener,noreferrer')
+  }
+
+  const removeLink = () => {
+    restoreLinkSelection()
+    props.editor.chain().focus().extendMarkRange('link').unsetLink().run()
+    linkInput.value = ''
+    linkPlaceholderActive.value = false
+    linkSelectionRange.value = null
+    linkPopoverVisible.value = false
+  }
+
+  const handleLinkPopoverHide = () => {
+    if (linkPlaceholderActive.value) {
+      restoreLinkSelection()
+
+      if (!getCurrentLink()) {
+        props.editor.chain().focus().extendMarkRange('link').unsetLink().run()
+      }
+    }
+
+    linkPlaceholderActive.value = false
+    linkSelectionRange.value = null
   }
 
   // 设置标题
@@ -193,6 +308,97 @@
       .focus()
       .toggleHeading({ level: Number(level) as any })
       .run()
+  }
+
+  const handleFontSize = (size: string | number) => {
+    props.editor
+      .chain()
+      .focus()
+      .setFontSize(`${Number(size)}px`)
+      .run()
+  }
+
+  const getCurrentFontSizeLabel = () => {
+    return props.editor.getAttributes('textStyle').fontSize || '16px'
+  }
+
+  const currentFontColor = computed(() => {
+    return props.editor.getAttributes('textStyle').color || '#000000'
+  })
+
+  const handleFontColorChange = (color: string) => {
+    if (!color) {
+      props.editor.chain().focus().setColor('#000000').run()
+      return
+    }
+
+    props.editor.chain().focus().setColor(color).run()
+  }
+
+  const selectedFontColor = computed({
+    get: () => currentFontColor.value,
+    set: (color: string) => {
+      handleFontColorChange(color)
+    },
+  })
+
+  const isFontSizeActive = (size: number) => {
+    const currentFontSize = props.editor.getAttributes('textStyle').fontSize
+    if (!currentFontSize) {
+      return size === 16
+    }
+    return currentFontSize === `${size}px`
+  }
+
+  const handleLineHeight = (lineHeight: string | number) => {
+    const normalizedLineHeight =
+      lineHeight === 'default' ? null : String(Math.max(Number(lineHeight), 1.5))
+    const targetLineHeight = normalizedLineHeight
+
+    if (props.editor.isActive('heading')) {
+      props.editor
+        .chain()
+        .focus()
+        .updateAttributes('heading', { lineHeight: targetLineHeight })
+        .run()
+      return
+    }
+
+    if (props.editor.isActive('paragraph')) {
+      props.editor
+        .chain()
+        .focus()
+        .updateAttributes('paragraph', { lineHeight: targetLineHeight })
+        .run()
+      return
+    }
+
+    if (targetLineHeight === null) {
+      props.editor.chain().focus().unsetLineHeight().run()
+      return
+    }
+
+    props.editor.chain().focus().setLineHeight(targetLineHeight).run()
+  }
+
+  const getActiveLineHeight = () => {
+    if (props.editor.isActive('heading')) {
+      return props.editor.getAttributes('heading').lineHeight
+    }
+
+    if (props.editor.isActive('paragraph')) {
+      return props.editor.getAttributes('paragraph').lineHeight
+    }
+
+    return props.editor.getAttributes('textStyle').lineHeight
+  }
+
+  const isLineHeightActive = (lineHeight: string | number) => {
+    const currentLineHeight = getActiveLineHeight()
+    if (!currentLineHeight) {
+      return lineHeight === 'default'
+    }
+    return String(currentLineHeight) === String(lineHeight)
   }
 
   const handleInsertContents = (command: string) => {
@@ -368,6 +574,21 @@
         </button>
       </el-tooltip>
       <el-tooltip
+        content="任务列表"
+        placement="bottom"
+        :show-after="200"
+        :show-arrow="false"
+        :offset="4"
+      >
+        <button
+          class="toolbar-btn"
+          :class="{ 'is-active': editor.isActive('taskList') }"
+          @click="editor.chain().focus().toggleTaskList().run()"
+        >
+          <SquareCheck :size="18" />
+        </button>
+      </el-tooltip>
+      <el-tooltip
         content="引用"
         placement="bottom"
         :show-after="200"
@@ -382,6 +603,88 @@
           <Quote :size="18" />
         </button>
       </el-tooltip>
+      <el-tooltip
+        content="折叠块"
+        placement="bottom"
+        :show-after="200"
+        :show-arrow="false"
+        :offset="4"
+      >
+        <button class="toolbar-btn" @click="editor.chain().focus().setDetails().run()">
+          <ListCollapse :size="18" />
+        </button>
+      </el-tooltip>
+    </div>
+
+    <div class="divider" />
+
+    <div class="flex items-center gap-1 mx-2">
+      <el-dropdown trigger="click" @command="handleFontSize">
+        <button class="toolbar-btn min-w-16 justify-between px-2">
+          <span class="text-sm font-semibold leading-none">{{ getCurrentFontSizeLabel() }}</span>
+          <ChevronDown :size="14" class="ml-0.5 opacity-70" />
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="size in fontSizeOptions"
+              :key="size"
+              :command="String(size)"
+              :class="{ 'text-[#00dc82]! bg-gray-100!': isFontSizeActive(size) }"
+            >
+              <div class="flex items-center justify-center gap-2 py-1 min-w-12">{{ size }}px</div>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
+
+      <el-popover
+        v-model:visible="fontColorPopoverVisible"
+        trigger="click"
+        placement="bottom-start"
+        :show-arrow="false"
+        :width="280"
+        :offset="8"
+        popper-class="font-color-popper custom-popover"
+      >
+        <template #reference>
+          <button class="toolbar-btn min-w-17 justify-between px-2" aria-label="字体颜色">
+            <span class="flex items-center gap-1.5">
+              <span
+                class="font-color-swatch"
+                :style="{
+                  backgroundColor: currentFontColor,
+                }"
+              />
+              <Baseline :size="18" />
+            </span>
+            <ChevronDown :size="14" class="opacity-70" />
+          </button>
+        </template>
+
+        <ColorPickerPanel v-model="selectedFontColor" />
+      </el-popover>
+
+      <el-dropdown trigger="click" @command="handleLineHeight">
+        <button class="toolbar-btn">
+          <ListChevronsUpDown :size="18" />
+          <ChevronDown :size="14" class="ml-0.5 opacity-70" />
+        </button>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item
+              v-for="lineHeight in lineHeightOptions"
+              :key="String(lineHeight.value)"
+              :command="lineHeight.value"
+              :class="{ 'text-[#00dc82]! bg-gray-100!': isLineHeightActive(lineHeight.value) }"
+            >
+              <div class="flex items-center justify-center gap-2 py-1 min-w-12">
+                {{ lineHeight.label }}
+              </div>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
 
     <div class="divider" />
@@ -462,34 +765,89 @@
           <Code :size="18" />
         </button>
       </el-tooltip>
+
+      <el-popover
+        trigger="click"
+        :show-arrow="false"
+        :width="230"
+        popper-class="action-popper"
+        placement="bottom"
+      >
+        <template #reference>
+          <button class="toolbar-btn" :class="{ 'is-active': editor.isActive('highlight') }">
+            <Highlighter :size="18" />
+          </button>
+        </template>
+
+        <div class="flex items-center gap-1">
+          <template v-for="color in highlightColors" :key="color">
+            <button
+              class="flex items-center justify-around rounded-xl w-8 h-8 hover:bg-gray-200 transition-colors"
+              @click="editor.chain().focus().toggleHighlight({ color }).run()"
+            >
+              <span :style="{ backgroundColor: color }" class="w-5.25 h-5.25 rounded-[50%]" />
+            </button>
+          </template>
+          <button
+            class="flex items-center justify-around rounded-xl w-8 h-8 hover:bg-gray-200 transition-colors"
+            @click="editor.chain().focus().unsetHighlight().run()"
+          >
+            <Ban :size="18" />
+          </button>
+        </div>
+      </el-popover>
+
+      <el-popover
+        v-model:visible="linkPopoverVisible"
+        trigger="click"
+        placement="bottom"
+        :show-arrow="false"
+        :width="320"
+        popper-class="action-popper"
+        @show="syncLinkInput"
+        @hide="handleLinkPopoverHide"
+      >
+        <template #reference>
+          <button
+            class="toolbar-btn"
+            :class="{ 'is-active': editor.isActive('link') }"
+            @mousedown.prevent="prepareLinkPlaceholder"
+          >
+            <LinkIcon :size="18" />
+          </button>
+        </template>
+
+        <div class="link-popover-content">
+          <el-input
+            ref="linkInputRef"
+            v-model="linkInput"
+            class="link-popover-input"
+            placeholder="请输入链接地址"
+            @keydown.enter.prevent="applyLink"
+          />
+
+          <div class="link-popover-actions">
+            <button type="button" class="link-popover-action-btn" @click="applyLink">
+              <CornerDownLeft :size="16" />
+            </button>
+            <button type="button" class="link-popover-action-btn" @click="openLink">
+              <ExternalLink :size="16" />
+            </button>
+            <button type="button" class="link-popover-action-btn" @click="removeLink">
+              <Trash2 :size="16" />
+            </button>
+          </div>
+        </div>
+      </el-popover>
       <el-tooltip
-        content="高亮"
+        content="分割线"
         placement="bottom"
         :show-after="200"
         :show-arrow="false"
         :offset="4"
       >
-        <button
-          class="toolbar-btn"
-          :class="{ 'is-active': editor.isActive('highlight') }"
-          @click="editor.chain().focus().toggleHighlight().run()"
-        >
-          <Highlighter :size="18" />
-        </button>
-      </el-tooltip>
-      <el-tooltip
-        content="链接"
-        placement="bottom"
-        :show-after="200"
-        :show-arrow="false"
-        :offset="4"
-      >
-        <button
-          class="toolbar-btn"
-          :class="{ 'is-active': editor.isActive('link') }"
-          @click="setLink"
-        >
-          <LinkIcon :size="18" />
+        <button class="toolbar-btn" @click="editor.chain().focus().setHorizontalRule().run()">
+          <Minus :size="18" />
         </button>
       </el-tooltip>
     </div>
@@ -697,7 +1055,7 @@
 
   @layer components {
     .toolbar-btn {
-      @apply p-1.5 rounded-md text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center min-w-8 h-8;
+      @apply p-1 rounded-md text-gray-600 hover:bg-gray-100 transition-colors flex items-center justify-center min-w-8 h-8;
     }
 
     .toolbar-btn.is-active {
@@ -711,6 +1069,69 @@
     .divider {
       @apply w-px h-5 bg-gray-200;
     }
+
+    .font-color-swatch {
+      @apply w-3 h-3 rounded-full border shrink-0;
+    }
+  }
+</style>
+
+<style>
+  .font-color-popper.el-popover {
+    padding: 0;
+  }
+
+  .action-popper.el-popover {
+    border-radius: 14px;
+    padding: 8px 10px;
+  }
+
+  .link-popover-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .link-popover-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .link-popover-input .el-input__wrapper {
+    box-shadow: none;
+    padding-left: 4px;
+    padding-right: 4px;
+    background: transparent;
+  }
+
+  .link-popover-input .el-input__wrapper.is-focus {
+    box-shadow: none;
+  }
+
+  .link-popover-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding-left: 8px;
+    border-left: 1px solid #e5e7eb;
+  }
+
+  .link-popover-action-btn {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    color: #6b7280;
+    background: transparent;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.16s ease;
+  }
+
+  .link-popover-action-btn:hover {
+    background: #f3f4f6;
   }
 </style>
 
@@ -725,5 +1146,10 @@
 
   .custom-drawer .ocr-result-input .el-textarea {
     height: 100%;
+  }
+
+  .custom-popover.el-popover.el-popper {
+    box-shadow: none;
+    border: none;
   }
 </style>

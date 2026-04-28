@@ -113,7 +113,7 @@
         v-if="isEditing"
         v-model="title"
         placeholder="请输入标题"
-        class="note-title-input text-4xl font-bold border-none shadow-none resize-none bg-transparent"
+        class="note-title-input text-4xl font-bold border-none shadow-none resize-none bg-transparent pl-5"
         resize="none"
         type="textarea"
         maxlength="40"

@@ -7,3 +7,7 @@
 @source "./components/**/*.{vue,js,ts,jsx,tsx}";
 @source "./composables/**/*.{js,ts}";
 @source "./utils/**/*.{js,ts}";
+
+.selector::-webkit-scrollbar {
+  display: none;
+}

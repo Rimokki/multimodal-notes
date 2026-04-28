@@ -90,7 +90,10 @@
       <!-- 字数统计挂载点 -->
       <div v-show="isEditing" id="editor-character-count" class="fixed bottom-1 ml-2!" />
 
-      <div id="editor-scroll-container" class="flex-1 py-10! overflow-auto flex justify-center">
+      <div
+        id="editor-scroll-container"
+        class="flex-1 py-10! overflow-y-auto overflow-x-hidden flex justify-center"
+      >
         <slot />
       </div>
     </div>
@@ -122,6 +125,10 @@
   #editor-scroll-container {
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 transparent;
+  }
+
+  #editor-scroll-container {
+    scrollbar-gutter: stable;
   }
 
   #toc-target::-webkit-scrollbar,

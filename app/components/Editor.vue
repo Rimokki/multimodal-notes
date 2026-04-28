@@ -1,11 +1,19 @@
 <template>
-  <div>
+  <div class="overflow-auto relative">
     <ClientOnly>
       <Teleport to="#toolbar-target">
         <EditorToolbar v-if="editor" :editor="editor" />
       </Teleport>
     </ClientOnly>
 
+    <DragHandle
+      v-if="editor"
+      :editor="editor"
+      :compute-position-config="{ placement: 'left-start', strategy: 'absolute' }"
+      class="flex items-center justify-center text-gray-400 bg-gray-200/50 hover:bg-gray-400/50 rounded-md w-4 h-5 cursor-grab transition-colors -translate-x-0.75"
+    >
+      <GripVertical :size="16" />
+    </DragHandle>
     <EditorContent :editor="editor" class="note-rich-content" />
 
     <ClientOnly>
@@ -25,7 +33,8 @@
 </template>
 
 <script setup>
-  import { ref } from 'vue'
+  import { GripVertical } from 'lucide-vue-next'
+  import { DragHandle } from '@tiptap/extension-drag-handle-vue-3'
   import { useEditor, EditorContent } from '@tiptap/vue-3'
   import { CharacterCount, Placeholder } from '@tiptap/extensions'
   import StarterKit from '@tiptap/starter-kit'
@@ -38,6 +47,10 @@
   import Heading from '@tiptap/extension-heading'
   import Audio from '@tiptap/extension-audio'
   import { getHierarchicalIndexes, TableOfContents } from '@tiptap/extension-table-of-contents'
+  import { DetailsContent, DetailsSummary } from '@tiptap/extension-details'
+  import { TaskItem, TaskList } from '@tiptap/extension-list'
+  import { TextStyleKit } from '@tiptap/extension-text-style'
+  import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
 
   const text = defineModel({
@@ -46,29 +59,49 @@
   })
 
   const tocItems = ref([])
+  // let editorScrollContainer = null
 
   const editor = useEditor({
     content: text.value,
     extensions: [
       StarterKit.configure({
         heading: false,
+        link: false,
       }),
       CharacterCount,
       Image,
       Superscript,
       Subscript,
-      Highlight,
+      Highlight.configure({
+        multicolor: true,
+      }),
       Audio,
       FileCard,
+      TaskList,
+      TextStyleKit.configure({
+        fontFamily: false,
+        lineHeight: {
+          types: ['textStyle', 'heading', 'paragraph'],
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+      }),
+      Details.configure({
+        persist: true,
+        HTMLAttributes: {
+          class: 'details',
+        },
+      }),
+      DetailsSummary,
+      DetailsContent,
       Heading.configure({
         levels: [1, 2, 3],
       }),
       Placeholder.configure({
         placeholder: '请输入内容',
       }),
-      Link.configure({
-        openOnClick: false,
-      }),
+      Link,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
@@ -120,7 +153,7 @@
 </script>
 
 <style lang="postcss" scoped>
-  :deep(.is-editor-empty:first-child::before) {
+  :deep(.is-editor-empty:first-child:last-child::before) {
     color: #adb5bd;
     content: attr(data-placeholder);
     float: left;

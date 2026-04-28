@@ -15,7 +15,6 @@ type RegisterBody = {
   email?: string
   password?: string
   username?: string
-  displayName?: string
 }
 
 export default defineEventHandler(async (event) => {
@@ -23,7 +22,6 @@ export default defineEventHandler(async (event) => {
   const email = body.email?.trim().toLowerCase()
   const password = body.password?.trim()
   const username = body.username?.trim() || null
-  const displayName = body.displayName?.trim() || null
 
   if (!email || !password) {
     throw createAuthError(400, 'Email and password are required')
@@ -40,7 +38,6 @@ export default defineEventHandler(async (event) => {
       data: {
         email,
         username,
-        displayName,
         passwordHash,
       },
     })

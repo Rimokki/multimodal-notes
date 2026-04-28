@@ -16,6 +16,10 @@
   import Highlight from '@tiptap/extension-highlight'
   import Heading from '@tiptap/extension-heading'
   import Audio from '@tiptap/extension-audio'
+  import { TaskItem, TaskList } from '@tiptap/extension-list'
+  import { DetailsContent, DetailsSummary } from '@tiptap/extension-details'
+  import { TextStyleKit } from '@tiptap/extension-text-style'
+  import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
 
   const props = defineProps({
@@ -29,19 +33,38 @@
     extensions: [
       StarterKit.configure({
         heading: false,
+        link: false,
       }),
       Image,
       FileCard,
       Superscript,
       Subscript,
-      Highlight,
+      Highlight.configure({
+        multicolor: true,
+      }),
       Audio,
+      TaskList,
+      TextStyleKit.configure({
+        fontFamily: false,
+        lineHeight: {
+          types: ['textStyle', 'heading', 'paragraph'],
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+      }),
+      Details.configure({
+        persist: true,
+        HTMLAttributes: {
+          class: 'details',
+        },
+      }),
+      DetailsSummary,
+      DetailsContent,
       Heading.configure({
         levels: [1, 2, 3],
       }),
-      Link.configure({
-        openOnClick: false,
-      }),
+      Link,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),

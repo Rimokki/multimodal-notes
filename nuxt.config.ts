@@ -55,6 +55,11 @@ export default defineNuxtConfig({
         '@tiptap/extension-table-of-contents',
         '@tiptap/pm/state',
         '@tiptap/extension-audio',
+        '@tiptap/extension-horizontal-rule',
+        'tesseract.js', // CJS
+        '@tiptap/extension-details',
+        '@tiptap/extension-list',
+        '@tiptap/extension-text-style',
       ],
     },
     css: {

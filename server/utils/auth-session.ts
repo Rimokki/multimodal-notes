@@ -14,7 +14,6 @@ type UserInfo = {
   id: number
   email: string
   username: string | null
-  displayName: string | null
   avatarUrl: string | null
   isActive: boolean
   lastLoginAt: Date | null
@@ -27,7 +26,6 @@ export function toUserInfo(user: UserInfo) {
     id: user.id,
     email: user.email,
     username: user.username,
-    displayName: user.displayName,
     avatarUrl: user.avatarUrl,
     isActive: user.isActive,
     lastLoginAt: user.lastLoginAt,

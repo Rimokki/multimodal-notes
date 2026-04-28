@@ -20,7 +20,6 @@
       id: number
       email: string
       username: string | null
-      displayName: string | null
       avatarUrl: string | null
       isActive: boolean
       lastLoginAt: string | null
@@ -50,11 +49,11 @@
   const authStore = useAuthStore()
   const { createNote } = useNotesApi()
 
-  const defaultAvatarUrl = 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+  const defaultAvatarUrl = '/images/original-avatar.png'
 
   const userAvatar = computed(() => authStore.user?.avatarUrl || defaultAvatarUrl)
   const menuDisplayName = computed(() => {
-    return authStore.user?.displayName || authStore.user?.username || '未命名用户'
+    return authStore.user?.username || authStore.user?.email || '未命名用户'
   })
   const menuSubLabel = computed(() => {
     return authStore.user?.email || '普通用户'
