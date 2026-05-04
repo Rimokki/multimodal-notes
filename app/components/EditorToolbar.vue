@@ -40,6 +40,7 @@
     ExternalLink,
     Trash2,
     Ban,
+    Table,
   } from 'lucide-vue-next'
   import { createWorker } from 'tesseract.js'
   import ColorPickerPanel from '~/components/ColorPickerPanel.vue'
@@ -63,7 +64,9 @@
   const ocrImagePreviewUrl = ref('')
   const ocrRecognizing = ref(false)
   const fontColorPopoverVisible = ref(false)
+  const isTableDialogVisible = ref(false)
   const linkPopoverVisible = ref(false)
+  const tableSize = ref({ rows: 3, cols: 3 })
   const linkInput = ref('')
   const linkSelectionRange = ref<{ from: number; to: number } | null>(null)
   const linkPlaceholderActive = ref(false)
@@ -77,6 +80,23 @@
     { label: '3', value: 3 },
   ]
   const highlightColors = ['#dcfce7', '#e0f2fe', '#ffe4e6', '#f3e8ff', '#fef9c3']
+
+  const openTableDialog = () => {
+    isTableDialogVisible.value = true
+  }
+
+  const handleInsertTable = () => {
+    props.editor
+      .chain()
+      .focus()
+      .insertTable({
+        rows: tableSize.value.rows,
+        cols: tableSize.value.cols,
+        withHeaderRow: true,
+      })
+      .run()
+    isTableDialogVisible.value = false
+  }
 
   const revokeOcrPreviewUrl = () => {
     if (ocrImagePreviewUrl.value) {
@@ -408,6 +428,8 @@
       audioInputRef.value?.click()
     } else if (command === '3') {
       fileInputRef.value?.click()
+    } else if (command === '4') {
+      openTableDialog()
     } else {
       return
     }
@@ -983,6 +1005,9 @@
             <el-dropdown-item command="3">
               <div class="flex items-center gap-3 py-1"><FilePlusCorner :size="18" /> 文件</div>
             </el-dropdown-item>
+            <el-dropdown-item command="4">
+              <div class="flex items-center gap-3 py-1"><Table :size="18" /> 表格</div>
+            </el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -1048,6 +1073,31 @@
       </div>
     </template>
   </el-drawer>
+
+  <Dialog
+    v-model="isTableDialogVisible"
+    title="插入表格"
+    :show-close="false"
+    width="220px"
+    @confirm="handleInsertTable"
+  >
+    <template #header>
+      <div class="font-bold mb-3">插入表格</div>
+    </template>
+
+    <template #default>
+      <div class="flex flex-col gap-4">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500 w-7 shrink-0">行数</span>
+          <el-input-number v-model="tableSize.rows" :min="1" :max="20" />
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-500 w-7 shrink-0">列数</span>
+          <el-input-number v-model="tableSize.cols" :min="1" :max="20" />
+        </div>
+      </div>
+    </template>
+  </Dialog>
 </template>
 
 <style scoped>

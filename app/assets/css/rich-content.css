@@ -1,3 +1,79 @@
+.note-rich-content {
+  table {
+    border-collapse: collapse;
+    margin: 0;
+    overflow: hidden;
+    table-layout: fixed;
+    width: 100%;
+
+    td,
+    th {
+      border: 1px solid var(--gray-3, #dbe5ef);
+      box-sizing: border-box;
+      min-width: 1em;
+      padding: 6px 8px;
+      position: relative;
+      vertical-align: top;
+
+      > * {
+        margin-bottom: 0;
+      }
+    }
+
+    th {
+      background-color: var(--gray-1, #f1f5f9);
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .selectedCell:after {
+      background: #00dc8210;
+      content: '';
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      pointer-events: none;
+      position: absolute;
+      z-index: 2;
+    }
+  }
+
+  .tableWrapper {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+    position: relative;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .tableWrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .tableWrapper::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tableWrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  .tableWrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+    background-clip: content-box;
+  }
+
+  .resize-cursor {
+    cursor: ew-resize;
+    cursor: col-resize;
+  }
+}
+
 .note-rich-content .ProseMirror {
   outline: none;
   min-height: 300px;
@@ -12,29 +88,26 @@
 .note-rich-content .ProseMirror h6 {
   line-height: 1.1;
   margin-top: 2.5rem;
+  margin-bottom: 1.25rem;
   text-wrap: pretty;
 }
 
 .note-rich-content .ProseMirror h1,
-.note-rich-content .ProseMirror h2 {
-  margin-top: 3rem;
-  margin-bottom: 1.5rem;
+.note-rich-content .ProseMirror h2,
+.note-rich-content .ProseMirror h3 {
   font-weight: 700;
 }
 
 .note-rich-content .ProseMirror h1 {
-  font-size: 2rem;
+  font-size: 1.75rem;
 }
 
 .note-rich-content .ProseMirror h2 {
-  font-size: 1.6rem;
-  margin-bottom: 1rem;
+  font-size: 1.5rem;
 }
 
 .note-rich-content .ProseMirror h3 {
-  font-size: 1.3rem;
-  font-weight: 500;
-  margin-bottom: 1rem;
+  font-size: 1.25rem;
 }
 
 .note-rich-content .ProseMirror h4,
@@ -192,6 +265,38 @@
   font-size: 0.9rem;
   padding: 0;
 }
+
+/* .note-rich-content .ProseMirror mark {
+  background-color: #fef9c3;
+  border-radius: 2px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0.1em 0;
+}
+
+.note-rich-content .ProseMirror s {
+  text-decoration: line-through;
+  text-decoration-color: #94a3b8;
+  text-decoration-thickness: 1.5px;
+}
+
+.note-rich-content .ProseMirror u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+} */
+
+/* .note-rich-content .ProseMirror sup {
+  font-size: 0.75em;
+  vertical-align: super;
+  line-height: 0;
+}
+
+.note-rich-content .ProseMirror sub {
+  font-size: 0.75em;
+  vertical-align: sub;
+  line-height: 0;
+} */
 
 .note-rich-content .ProseMirror hr {
   border: none;
@@ -361,5 +466,35 @@ img {
 @keyframes ProseMirror-cursor-blink {
   to {
     visibility: hidden;
+  }
+}
+
+@media print {
+  .note-rich-content .ProseMirror {
+    padding: 0;
+    min-height: auto;
+  }
+
+  .note-rich-content .ProseMirror h1,
+  .note-rich-content .ProseMirror h2,
+  .note-rich-content .ProseMirror h3 {
+    page-break-after: avoid;
+  }
+
+  .note-rich-content .ProseMirror table {
+    page-break-inside: avoid;
+  }
+
+  .note-rich-content .ProseMirror pre {
+    page-break-inside: avoid;
+    white-space: pre-wrap;
+  }
+
+  .note-rich-content .ProseMirror blockquote {
+    page-break-inside: avoid;
+  }
+
+  .note-rich-content .ProseMirror img {
+    page-break-inside: avoid;
   }
 }

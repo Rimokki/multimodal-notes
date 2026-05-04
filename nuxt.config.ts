@@ -60,6 +60,12 @@ export default defineNuxtConfig({
         '@tiptap/extension-details',
         '@tiptap/extension-list',
         '@tiptap/extension-text-style',
+        '@tiptap/extension-drag-handle-vue-3',
+        '@tiptap/extension-table',
+        '@tiptap/extension-table',
+        '@tiptap/markdown',
+        'jszip', // CJS
+        '@tiptap/vue-3/menus',
       ],
     },
     css: {

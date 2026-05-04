@@ -21,6 +21,50 @@ const mergeAttributes = (...sources: Array<Record<string, any> | undefined>) => 
 }
 
 export const Details = BaseDetails.extend({
+  markdownOptions: {
+    indentsContent: true,
+  },
+
+  renderMarkdown(node: any, helper: any) {
+    const summaryNode = node.content?.[0]
+    const contentNode = node.content?.[1]
+    const summaryText = summaryNode ? helper.renderChildren(summaryNode) : '详情'
+    const contentText = contentNode ? helper.renderChildren(contentNode) : ''
+    return `:::details\n\n:::detailsSummary\n${summaryText}\n:::\n\n:::detailsContent\n${contentText}\n:::\n\n:::`
+  },
+
+  parseMarkdown: (token: any, h: any) => {
+    const summaryChildren = token.summaryTokens
+      ? h.parseInline(token.summaryTokens)
+      : [{ type: 'text', text: '详情' }]
+    const contentChildren = token.contentTokens ? h.parseChildren(token.contentTokens) : []
+
+    return h.createNode('details', {}, [
+      h.createNode('detailsSummary', {}, summaryChildren),
+      h.createNode('detailsContent', {}, contentChildren),
+    ])
+  },
+
+  markdownTokenizer: {
+    name: 'details',
+    level: 'block',
+    start: (src: string) => src.match(/^:::details/m)?.index ?? -1,
+    tokenize(src: string, _tokens: any, h: any) {
+      const rule =
+        /^:::details\n\n:::detailsSummary\n([\s\S]*?)\n:::\n\n:::detailsContent\n([\s\S]*?)\n:::\n\n:::/
+      const match = rule.exec(src)
+      if (match) {
+        const summaryText = match[1]?.trim() ?? ''
+        const contentText = match[2]?.trim() ?? ''
+        return {
+          type: 'details',
+          raw: match[0],
+          summaryTokens: h.inlineTokens(summaryText),
+          contentTokens: h.blockTokens(contentText),
+        }
+      }
+    },
+  },
   addNodeView() {
     return ({ editor, getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')

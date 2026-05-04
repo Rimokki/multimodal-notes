@@ -19,6 +19,7 @@
   import { TaskItem, TaskList } from '@tiptap/extension-list'
   import { DetailsContent, DetailsSummary } from '@tiptap/extension-details'
   import { TextStyleKit } from '@tiptap/extension-text-style'
+  import { TableKit } from '@tiptap/extension-table'
   import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
 
@@ -68,6 +69,7 @@
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
+      TableKit,
     ],
     editable: false,
     content: props.content,

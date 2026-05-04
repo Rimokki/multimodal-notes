@@ -42,6 +42,37 @@ export const FileCard = Node.create({
     }
   },
 
+  renderMarkdown: (node: any) => {
+    const href = node.attrs?.href || '#'
+    const title = node.attrs?.title || '附件'
+    return `[file:${title}](${href})`
+  },
+
+  parseMarkdown: (token: any, h: any) => {
+    return h.createNode('fileCard', {
+      href: token.href || '',
+      title: token.title || '附件',
+    })
+  },
+
+  markdownTokenizer: {
+    name: 'fileCard',
+    level: 'inline',
+    start: (src: string) => src.match(/\[file:/)?.index ?? -1,
+    tokenize(src: string, _tokens: any, _h: any) {
+      const rule = /^\[file:([^\]]+)\]\(([^)]+)\)/
+      const match = rule.exec(src)
+      if (match) {
+        return {
+          type: 'fileCard',
+          raw: match[0],
+          title: match[1],
+          href: match[2],
+        }
+      }
+    },
+  },
+
   parseHTML() {
     return [
       {

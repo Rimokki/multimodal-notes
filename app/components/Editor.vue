@@ -1,30 +1,29 @@
 <template>
-  <div class="overflow-auto relative">
+  <div class="relative">
     <ClientOnly>
       <Teleport to="#toolbar-target">
         <EditorToolbar v-if="editor" :editor="editor" />
       </Teleport>
-    </ClientOnly>
 
-    <DragHandle
-      v-if="editor"
-      :editor="editor"
-      :compute-position-config="{ placement: 'left-start', strategy: 'absolute' }"
-      class="flex items-center justify-center text-gray-400 bg-gray-200/50 hover:bg-gray-400/50 rounded-md w-4 h-5 cursor-grab transition-colors -translate-x-0.75"
-    >
-      <GripVertical :size="16" />
-    </DragHandle>
-    <EditorContent :editor="editor" class="note-rich-content" />
+      <DragHandle
+        v-if="editor"
+        :editor="editor"
+        :compute-position-config="{ placement: 'left-start', strategy: 'absolute' }"
+        class="flex items-center justify-center text-gray-400 bg-gray-200/50 hover:bg-gray-400/50 rounded-md w-4 h-5 cursor-grab transition-colors -translate-x-0.75"
+      >
+        <GripVertical :size="16" />
+      </DragHandle>
 
-    <ClientOnly>
+      <EditorContent :editor="editor" class="note-rich-content" />
+      <TableBubbleMenu v-if="editor" :editor="editor" />
+      <!-- <TableInsertHandles v-if="editor" :editor="editor" /> -->
+
       <Teleport to="#editor-character-count">
         <span v-if="editor" class="text-gray-400 text-xs z-10">
           {{ editor.storage.characterCount.characters() }}字
         </span>
       </Teleport>
-    </ClientOnly>
 
-    <ClientOnly>
       <Teleport to="#toc-target">
         <ToC v-if="editor" :editor="editor" :items="tocItems" />
       </Teleport>
@@ -50,8 +49,84 @@
   import { DetailsContent, DetailsSummary } from '@tiptap/extension-details'
   import { TaskItem, TaskList } from '@tiptap/extension-list'
   import { TextStyleKit } from '@tiptap/extension-text-style'
+  import { TableKit } from '@tiptap/extension-table'
+  import { Markdown } from '@tiptap/markdown'
+  // import { TextSelection } from '@tiptap/pm/state'
   import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
+  // import TableInsertHandles from '~/components/TableInsertHandles.vue'
+
+  const SuperscriptMd = Superscript.extend({
+    renderMarkdown: (_node, h) => `^(${h.renderChildren(_node)})`,
+    parseMarkdown: (token, h) => {
+      return h.applyMark('superscript', h.parseInline(token.tokens || []))
+    },
+    markdownTokenizer: {
+      name: 'superscript',
+      level: 'inline',
+      start: (src) => src.indexOf('^('),
+      tokenize(src, _tokens, h) {
+        const rule = /^\^\(([^)]+)\)/
+        const match = rule.exec(src)
+        if (match) {
+          return {
+            type: 'superscript',
+            raw: match[0],
+            tokens: h.inlineTokens(match[1]),
+          }
+        }
+      },
+    },
+  })
+
+  const SubscriptMd = Subscript.extend({
+    renderMarkdown: (_node, h) => `~(${h.renderChildren(_node)})`,
+    parseMarkdown: (token, h) => {
+      return h.applyMark('subscript', h.parseInline(token.tokens || []))
+    },
+    markdownTokenizer: {
+      name: 'subscript',
+      level: 'inline',
+      start: (src) => src.indexOf('~('),
+      tokenize(src, _tokens, h) {
+        const rule = /^~\(([^)]+)\)/
+        const match = rule.exec(src)
+        if (match) {
+          return {
+            type: 'subscript',
+            raw: match[0],
+            tokens: h.inlineTokens(match[1]),
+          }
+        }
+      },
+    },
+  })
+
+  const AudioMd = Audio.extend({
+    renderMarkdown: (node) => {
+      const src = node.attrs?.src || ''
+      return src ? `<audio src="${src}"></audio>` : ''
+    },
+    parseMarkdown: (token, h) => {
+      return h.createNode('audio', { src: token.src || '' })
+    },
+    markdownTokenizer: {
+      name: 'audio',
+      level: 'block',
+      start: (src) => src.match(/<audio/)?.index ?? -1,
+      tokenize(src, _tokens, _h) {
+        const rule = /^<audio\s+src="([^"]+)"><\/audio>/
+        const match = rule.exec(src)
+        if (match) {
+          return {
+            type: 'audio',
+            raw: match[0],
+            src: match[1],
+          }
+        }
+      },
+    },
+  })
 
   const text = defineModel({
     type: String,
@@ -70,12 +145,12 @@
       }),
       CharacterCount,
       Image,
-      Superscript,
-      Subscript,
+      SuperscriptMd,
+      SubscriptMd,
       Highlight.configure({
         multicolor: true,
       }),
-      Audio,
+      AudioMd,
       FileCard,
       TaskList,
       TextStyleKit.configure({
@@ -114,9 +189,50 @@
           tocItems.value = anchors
         },
       }),
+      TableKit.configure({
+        table: { resizable: true },
+      }),
+      Markdown.configure({
+        indentation: { style: 'space', size: 2 },
+      }),
     ],
     // Don't render on the server, only on the client after hydration
     immediatelyRender: false,
+    // editorProps: {
+    //   handleKeyDown: (view, event) => {
+    //     if (event.key === 'Backspace') {
+    //       const { selection, doc } = view.state
+    //       const { $from, empty } = selection
+
+    //       if (!empty) return false
+
+    //       if ($from.parentOffset === 0 && $from.nodeBefore?.type.name === 'table') {
+    //         const tableEnd = $from.pos
+    //         const $lastCell = doc.resolve(tableEnd - 1)
+    //         const sel = TextSelection.near($lastCell, -1)
+    //         view.dispatch(view.state.tr.setSelection(sel))
+    //         return true
+    //       }
+    //     }
+
+    //     if (event.key === 'Delete') {
+    //       const { selection, doc } = view.state
+    //       const { $from, empty } = selection
+
+    //       if (!empty) return false
+
+    //       const parentEnd = $from.parent.nodeSize - 2
+    //       if ($from.parentOffset === parentEnd && $from.nodeAfter?.type.name === 'table') {
+    //         const $firstCell = doc.resolve($from.pos + 1)
+    //         const sel = TextSelection.near($firstCell, 1)
+    //         view.dispatch(view.state.tr.setSelection(sel))
+    //         return true
+    //       }
+    //     }
+
+    //     return false
+    //   },
+    // },
     onUpdate: ({ editor }) => {
       // HTML
       text.value = editor.getHTML()
@@ -133,6 +249,15 @@
   defineExpose({
     focus,
   })
+
+  const { setEditor } = useExport()
+  watch(
+    editor,
+    (e) => {
+      if (e) setEditor(e)
+    },
+    { immediate: true },
+  )
 
   watch(
     () => text.value,
@@ -160,4 +285,8 @@
     height: 0;
     pointer-events: none;
   }
+</style>
+
+<style lang="scss">
+  /* Table-specific styling */
 </style>

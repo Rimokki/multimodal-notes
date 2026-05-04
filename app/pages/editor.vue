@@ -14,7 +14,7 @@
   const title = useState('noteTitle', () => '')
   const isFavorite = useState('noteIsFavorite', () => false)
   const saveStatus = useState<'idle' | 'saving' | 'saved' | 'error'>('noteSaveStatus', () => 'idle')
-  const content = ref('')
+  const content = useState('noteContent', () => '')
   const editorRef = ref()
   const loading = ref(true)
   const bootstrapping = ref(true)
@@ -113,7 +113,7 @@
         v-if="isEditing"
         v-model="title"
         placeholder="请输入标题"
-        class="note-title-input text-4xl font-bold border-none shadow-none resize-none bg-transparent pl-5"
+        class="note-title-input text-3xl font-bold border-none shadow-none resize-none bg-transparent pl-5"
         resize="none"
         type="textarea"
         maxlength="40"
