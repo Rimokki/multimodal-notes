@@ -34,6 +34,7 @@ export const useAuthStore = defineStore('auth', () => {
     return user.value?.username || ''
   })
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const authHeader = computed(() => {
     if (!accessToken.value) return null
     return `Bearer ${accessToken.value}`
@@ -95,16 +96,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const fetchMe = async () => {
-    if (!authHeader.value) {
+    if (!accessToken.value) {
       clearSession()
       return
     }
 
-    const response = await $fetch<{ user: AuthUser }>('/api/auth/me', {
-      headers: {
-        Authorization: authHeader.value,
-      },
-    })
+    const { request } = useApiFetch()
+    const response = await request<{ user: AuthUser }>('/api/auth/me')
 
     user.value = response.user
     persist()
@@ -123,17 +121,7 @@ export const useAuthStore = defineStore('auth', () => {
 
     try {
       await fetchMe()
-    } catch (error: any) {
-      if (error?.status === 401 || error?.data?.statusCode === 401) {
-        try {
-          await refreshSession()
-          await fetchMe()
-          return
-        } catch {
-          clearSession()
-          return
-        }
-      }
+    } catch {
       clearSession()
     }
   }
@@ -147,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     accountName,
     setSession,
     clearSession,
+    refreshSession,
     hydrate,
     initialize,
   }

@@ -54,8 +54,8 @@
     "@tiptap/pm": "^3.22.5",
     "@tiptap/starter-kit": "^3.22.5",
     "@tiptap/vue-3": "^3.22.5",
-    "axios": "^1.16.0",
     "better-sqlite3": "^12.8.0",
+    "d3": "^7.9.0",
     "dayjs": "^1.11.19",
     "dotenv": "^17.3.1",
     "eslint": "^9.38.0",
@@ -68,6 +68,7 @@
     "tailwindcss": "^4.2.4",
     "tesseract.js": "^7.0.0",
     "typescript": "^5.9.3",
+    "uuid": "^14.0.0",
     "vue": "^3.5.33",
     "vue-router": "^4.6.3"
   },

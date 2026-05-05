@@ -41,6 +41,7 @@
     Trash2,
     Ban,
     Table,
+    Brush,
   } from 'lucide-vue-next'
   import { createWorker } from 'tesseract.js'
   import ColorPickerPanel from '~/components/ColorPickerPanel.vue'
@@ -430,6 +431,17 @@
       fileInputRef.value?.click()
     } else if (command === '4') {
       openTableDialog()
+    } else if (command === '5') {
+      props.editor
+        .chain()
+        .focus()
+        .insertContent({
+          type: 'canvas',
+          attrs: {
+            lines: [],
+          },
+        })
+        .run()
     } else {
       return
     }
@@ -1007,6 +1019,9 @@
             </el-dropdown-item>
             <el-dropdown-item command="4">
               <div class="flex items-center gap-3 py-1"><Table :size="18" /> 表格</div>
+            </el-dropdown-item>
+            <el-dropdown-item command="5">
+              <div class="flex items-center gap-3 py-1"><Brush :size="18" /> 画布</div>
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>

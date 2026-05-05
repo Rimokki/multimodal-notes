@@ -22,6 +22,8 @@
   import { TableKit } from '@tiptap/extension-table'
   import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
+  import { Markdown } from '@tiptap/markdown'
+  import Canvas from '~/extensions/canvas'
 
   const props = defineProps({
     content: {
@@ -70,6 +72,10 @@
         types: ['heading', 'paragraph'],
       }),
       TableKit,
+      Markdown.configure({
+        indentation: { style: 'space', size: 2 },
+      }),
+      Canvas,
     ],
     editable: false,
     content: props.content,

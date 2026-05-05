@@ -121,11 +121,9 @@
     try {
       avatarUploadLoading.value = true
       const payloadFile = await serializeFileToPayload(file)
-      const response = await $fetch<UpdateProfileResponse>('/api/auth/avatar', {
+      const { request } = useApiFetch()
+      const response = await request<UpdateProfileResponse>('/api/auth/avatar', {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
         body: {
           file: payloadFile,
         },
@@ -162,11 +160,9 @@
     try {
       updateProfileLoading.value = true
 
-      const response = await $fetch<UpdateProfileResponse>('/api/auth/update', {
+      const { request } = useApiFetch()
+      const response = await request<UpdateProfileResponse>('/api/auth/update', {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
         body: {
           username: normalizedUsername,
         },
@@ -227,11 +223,9 @@
     try {
       changingPasswordLoading.value = true
 
-      await $fetch('/api/auth/update', {
+      const { request } = useApiFetch()
+      await request('/api/auth/update', {
         method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${authStore.accessToken}`,
-        },
         body: {
           oldPassword: passwordForm.oldPassword,
           newPassword: passwordForm.newPassword,

@@ -2,6 +2,80 @@ import JSZip from 'jszip'
 
 let editorInstance: any = null
 
+function canvasLinesToSvg(lines: any[]): string {
+  const pathElements = lines
+    .filter((l) => l.path)
+    .map(
+      (l) =>
+        `<path d="${l.path}" stroke="${l.color}" stroke-width="${l.size}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+    )
+    .join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 250" style="width:100%;background:#f1f3f5;border-radius:0.5rem;">${pathElements}</svg>`
+}
+
+async function svgToPngDataUrl(svgString: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 1000
+      canvas.height = 500
+      const ctx = canvas.getContext('2d')!
+      ctx.fillStyle = '#f1f3f5'
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+      URL.revokeObjectURL(url)
+      resolve(canvas.toDataURL('image/png'))
+    }
+    img.onerror = (e) => {
+      URL.revokeObjectURL(url)
+      reject(e)
+    }
+    img.src = url
+  })
+}
+
+function replaceCanvasNodes(container: HTMLElement, mode: 'svg' | 'img', imgDataUrls?: string[]) {
+  const canvasNodes = container.querySelectorAll('div[data-type="canvas"]')
+  let imgIdx = 0
+  canvasNodes.forEach((node) => {
+    const raw = node.getAttribute('data-lines')
+    if (!raw) {
+      node.remove()
+      return
+    }
+    let lines: any[] = []
+    try {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) lines = parsed
+    } catch {
+      // ignore
+    }
+    if (lines.length === 0) {
+      node.remove()
+      return
+    }
+    if (mode === 'svg') {
+      const wrapper = document.createElement('div')
+      wrapper.innerHTML = canvasLinesToSvg(lines)
+      wrapper.style.margin = '0.75rem 0'
+      node.replaceWith(wrapper)
+    } else {
+      const wrapper = document.createElement('div')
+      wrapper.style.cssText = 'text-align:left;margin:0.75rem 0;clear:both;'
+      const img = document.createElement('img')
+      img.src = imgDataUrls?.[imgIdx] ?? ''
+      img.style.cssText = 'max-width:100%;width:100%;height:auto;display:block;'
+      img.setAttribute('width', '100%')
+      wrapper.appendChild(img)
+      node.replaceWith(wrapper)
+      imgIdx++
+    }
+  })
+}
+
 export function useExport() {
   const noteTitle = useState<string>('noteTitle', () => '无标题笔记')
   const noteContent = useState<string>('noteContent', () => '')
@@ -26,13 +100,144 @@ export function useExport() {
     URL.revokeObjectURL(url)
   }
 
-  function exportMarkdown() {
-    try {
-      if (!editorInstance) {
-        ElMessage.error('编辑器尚未初始化')
-        return
+  function htmlToMarkdown(el: Node): string {
+    let md = ''
+    el.childNodes.forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        md += child.textContent
+      } else if (child.nodeType === Node.ELEMENT_NODE) {
+        const tag = (child as Element).tagName.toLowerCase()
+        const inner = htmlToMarkdown(child)
+        switch (tag) {
+          case 'h1': md += `# ${inner.trim()}\n\n`; break
+          case 'h2': md += `## ${inner.trim()}\n\n`; break
+          case 'h3': md += `### ${inner.trim()}\n\n`; break
+          case 'h4': md += `#### ${inner.trim()}\n\n`; break
+          case 'h5': md += `##### ${inner.trim()}\n\n`; break
+          case 'h6': md += `###### ${inner.trim()}\n\n`; break
+          case 'p': md += `${inner.trim()}\n\n`; break
+          case 'strong': case 'b': md += `**${inner}**`; break
+          case 'em': case 'i': md += `*${inner}*`; break
+          case 's': case 'del': md += `~~${inner}~~`; break
+          case 'u': md += inner; break
+          case 'code':
+            if (child.parentElement?.tagName.toLowerCase() === 'pre') { md += inner; break }
+            md += `\`${inner}\``; break
+          case 'pre': md += `\`\`\`\n${(child as HTMLElement).textContent?.trim() ?? ''}\n\`\`\`\n\n`; break
+          case 'blockquote': md += inner.split('\n').filter(Boolean).map((l) => `> ${l}`).join('\n') + '\n\n'; break
+          case 'a': {
+            const href = (child as HTMLAnchorElement).href
+            const isFileCard = child.parentElement?.getAttribute('data-type') === 'file-card'
+            let linkText = inner
+            if (isFileCard) {
+              const clone = (child as HTMLElement).cloneNode(true) as HTMLElement
+              clone.querySelector('strong')?.remove()
+              clone.querySelectorAll('br').forEach((br) => br.remove())
+              linkText = clone.textContent?.trim() ?? ''
+            }
+            md += `[${linkText}](${href})`
+            if (child.parentElement?.tagName.toLowerCase() === 'div') md += '\n\n'
+            break
+          }
+          case 'img': {
+            const src = (child as HTMLImageElement).src
+            if (src) md += `![image](${src})\n\n`
+            break
+          }
+          case 'sup': md += `<sup>${inner}</sup>`; break
+          case 'sub': md += `<sub>${inner}</sub>`; break
+          case 'details': md += `<details>\n${inner.trim()}\n</details>\n\n`; break
+          case 'summary': md += `<summary>${inner.trim()}</summary>\n`; break
+          case 'hr': md += '---\n\n'; break
+          case 'br': md += '\n'; break
+          case 'ul':
+            if ((child as Element).getAttribute('data-type') === 'taskList') {
+              child.childNodes.forEach((li) => {
+                if (li.nodeType !== Node.ELEMENT_NODE) return
+                const checked = (li as Element).getAttribute('data-checked') === 'true'
+                md += `- [${checked ? 'x' : ' '}] ${htmlToMarkdown(li).trim()}\n`
+              })
+              md += '\n'
+            } else {
+              child.childNodes.forEach((li) => {
+                if (li.nodeType !== Node.ELEMENT_NODE) return
+                md += `- ${htmlToMarkdown(li).trim()}\n`
+              })
+              md += '\n'
+            }
+            break
+          case 'ol':
+            child.childNodes.forEach((li, i) => {
+              if (li.nodeType !== Node.ELEMENT_NODE) return
+              md += `${i + 1}. ${htmlToMarkdown(li).trim()}\n`
+            })
+            md += '\n'
+            break
+          case 'li': md += inner; break
+          case 'table': {
+            const rows: string[][] = []
+            ;(child as Element).querySelectorAll('tr').forEach((tr: Element) => {
+              const cells: string[] = []
+              tr.querySelectorAll('th,td').forEach((cell: Element) => {
+                cells.push(htmlToMarkdown(cell).trim())
+              })
+              rows.push(cells)
+            })
+            if (rows.length > 0) {
+              const header = rows[0]!
+              md += header.join(' | ') + '\n'
+              md += header.map(() => '---').join(' | ') + '\n'
+              rows.slice(1).forEach((row) => { md += row.join(' | ') + '\n' })
+              md += '\n'
+            }
+            break
+          }
+          case 'audio': {
+            const src = (child as HTMLAudioElement).src
+            if (src) md += `<audio src="${src}" controls></audio>\n\n`
+            break
+          }
+          case 'mark': md += `==${inner}==`; break
+          case 'div': md += inner; break
+          default: md += inner
+        }
       }
-      const markdown = editorInstance.getMarkdown()
+    })
+    return md
+  }
+
+  async function exportMarkdown() {
+    try {
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = editorInstance?.getHTML() ?? noteContent.value
+
+      // Convert canvas nodes to PNG images
+      const canvasNodes = tempDiv.querySelectorAll('div[data-type="canvas"]')
+      for (const node of canvasNodes) {
+        const raw = node.getAttribute('data-lines')
+        let lines: any[] = []
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) lines = parsed
+          } catch { /* skip */ }
+        }
+        if (lines.length > 0) {
+          const svgStr = canvasLinesToSvg(lines)
+          const pngDataUrl = await svgToPngDataUrl(svgStr)
+          const img = document.createElement('img')
+          img.src = pngDataUrl
+          img.alt = 'canvas'
+          node.replaceWith(img)
+        } else {
+          node.remove()
+        }
+      }
+
+      // Remove task list labels (checkboxes handled in htmlToMarkdown)
+      tempDiv.querySelectorAll('ul[data-type="taskList"] li label').forEach((l) => l.remove())
+
+      const markdown = `# ${noteTitle.value}\n\n${htmlToMarkdown(tempDiv).trim().replace(/\n{3,}/g, '\n\n')}\n`
       const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
       downloadBlob(blob, getSafeFileName(noteTitle.value, 'md'))
       ElMessage.success('Markdown导出成功')
@@ -56,6 +261,7 @@ export function useExport() {
         const label = li.querySelector('label')
         if (label) label.remove()
       })
+      replaceCanvasNodes(tempDiv, 'svg')
 
       const html = `
         <!DOCTYPE html>
@@ -184,6 +390,27 @@ export function useExport() {
 </w:document>`,
       )
 
+      // Pre-process canvas nodes: convert SVG lines to PNG data URLs
+      const tempDiv = document.createElement('div')
+      tempDiv.innerHTML = noteContent.value
+      const canvasNodes = tempDiv.querySelectorAll('div[data-type="canvas"]')
+      const pngDataUrls: string[] = []
+      for (const node of canvasNodes) {
+        const raw = node.getAttribute('data-lines')
+        let lines: any[] = []
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) lines = parsed
+          } catch { /* skip invalid JSON */ }
+        }
+        if (lines.length > 0) {
+          const svgStr = canvasLinesToSvg(lines)
+          pngDataUrls.push(await svgToPngDataUrl(svgStr))
+        }
+      }
+      replaceCanvasNodes(tempDiv, 'img', pngDataUrls)
+
       // word/chunk.html
       const chunkHtml = `<!DOCTYPE html>
 <html>
@@ -218,7 +445,7 @@ export function useExport() {
 </head>
 <body>
   <h1>${noteTitle.value}</h1>
-  ${noteContent.value}
+  ${tempDiv.innerHTML}
 </body>
 </html>`
 

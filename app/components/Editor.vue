@@ -16,6 +16,7 @@
 
       <EditorContent :editor="editor" class="note-rich-content" />
       <TableBubbleMenu v-if="editor" :editor="editor" />
+      <CanvasBubbleMenu v-if="editor" :editor="editor" />
       <!-- <TableInsertHandles v-if="editor" :editor="editor" /> -->
 
       <Teleport to="#editor-character-count">
@@ -51,10 +52,9 @@
   import { TextStyleKit } from '@tiptap/extension-text-style'
   import { TableKit } from '@tiptap/extension-table'
   import { Markdown } from '@tiptap/markdown'
-  // import { TextSelection } from '@tiptap/pm/state'
   import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
-  // import TableInsertHandles from '~/components/TableInsertHandles.vue'
+  import Canvas from '~/extensions/canvas'
 
   const SuperscriptMd = Superscript.extend({
     renderMarkdown: (_node, h) => `^(${h.renderChildren(_node)})`,
@@ -134,7 +134,6 @@
   })
 
   const tocItems = ref([])
-  // let editorScrollContainer = null
 
   const editor = useEditor({
     content: text.value,
@@ -195,50 +194,19 @@
       Markdown.configure({
         indentation: { style: 'space', size: 2 },
       }),
+      Canvas,
     ],
     // Don't render on the server, only on the client after hydration
     immediatelyRender: false,
-    // editorProps: {
-    //   handleKeyDown: (view, event) => {
-    //     if (event.key === 'Backspace') {
-    //       const { selection, doc } = view.state
-    //       const { $from, empty } = selection
 
-    //       if (!empty) return false
-
-    //       if ($from.parentOffset === 0 && $from.nodeBefore?.type.name === 'table') {
-    //         const tableEnd = $from.pos
-    //         const $lastCell = doc.resolve(tableEnd - 1)
-    //         const sel = TextSelection.near($lastCell, -1)
-    //         view.dispatch(view.state.tr.setSelection(sel))
-    //         return true
-    //       }
-    //     }
-
-    //     if (event.key === 'Delete') {
-    //       const { selection, doc } = view.state
-    //       const { $from, empty } = selection
-
-    //       if (!empty) return false
-
-    //       const parentEnd = $from.parent.nodeSize - 2
-    //       if ($from.parentOffset === parentEnd && $from.nodeAfter?.type.name === 'table') {
-    //         const $firstCell = doc.resolve($from.pos + 1)
-    //         const sel = TextSelection.near($firstCell, 1)
-    //         view.dispatch(view.state.tr.setSelection(sel))
-    //         return true
-    //       }
-    //     }
-
-    //     return false
-    //   },
-    // },
     onUpdate: ({ editor }) => {
-      // HTML
-      text.value = editor.getHTML()
+      nextTick(() => {
+        // HTML
+        text.value = editor.getHTML()
 
-      // JSON
-      // text.value = editor.getJSON()
+        // JSON
+        // text.value = editor.getJSON()
+      })
     },
   })
 
@@ -272,7 +240,7 @@
         return
       }
 
-      editor.value?.commands.setContent(value, false)
+      editor.value?.commands.setContent(value, { emitUpdate: false, addToHistory: false })
     },
   )
 </script>
@@ -285,8 +253,4 @@
     height: 0;
     pointer-events: none;
   }
-</style>
-
-<style lang="scss">
-  /* Table-specific styling */
 </style>

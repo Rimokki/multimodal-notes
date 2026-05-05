@@ -123,7 +123,7 @@
 
       <h1
         v-else
-        class="text-4xl font-bold text-gray-900 leading-tight wrap-break-word whitespace-pre-wrap"
+        class="text-4xl font-bold text-gray-900 leading-tight wrap-break-word whitespace-pre-wrap pl-5"
       >
         {{ title || '无标题笔记' }}
       </h1>

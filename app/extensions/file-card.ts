@@ -44,14 +44,14 @@ export const FileCard = Node.create({
 
   renderMarkdown: (node: any) => {
     const href = node.attrs?.href || '#'
-    const title = node.attrs?.title || '附件'
+    const title = node.attrs?.title || ''
     return `[file:${title}](${href})`
   },
 
   parseMarkdown: (token: any, h: any) => {
     return h.createNode('fileCard', {
       href: token.href || '',
-      title: token.title || '附件',
+      title: token.title || '',
     })
   },
 

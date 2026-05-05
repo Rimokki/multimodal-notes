@@ -66,6 +66,8 @@ export default defineNuxtConfig({
         '@tiptap/markdown',
         'jszip', // CJS
         '@tiptap/vue-3/menus',
+        'd3',
+        'uuid',
       ],
     },
     css: {
