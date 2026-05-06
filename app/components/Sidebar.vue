@@ -11,6 +11,11 @@
     Setting,
     Fold,
     Expand,
+    DataBoard,
+    UserFilled,
+    Notebook,
+    Clock,
+    List,
   } from '@element-plus/icons-vue'
 
   import { LogIn, LogOut, User } from 'lucide-vue-next'
@@ -22,6 +27,7 @@
       username: string | null
       avatarUrl: string | null
       isActive: boolean
+      role: string
       lastLoginAt: string | null
       createdAt: string
       updatedAt: string
@@ -49,7 +55,7 @@
   const authStore = useAuthStore()
   const { createNote } = useNotesApi()
 
-  const defaultAvatarUrl = '/images/original-avatar.png'
+  const defaultAvatarUrl = '/images/original_avatar.png'
 
   const userAvatar = computed(() => authStore.user?.avatarUrl || defaultAvatarUrl)
   const menuDisplayName = computed(() => {
@@ -73,6 +79,11 @@
     '/favourite': '3',
     '/recycle-bin': '4',
     '/settings': '5',
+    '/admin': '6',
+    '/admin/users': '7',
+    '/admin/notes': '8',
+    '/admin/sessions': '9',
+    '/admin/operations': '10',
   }
 
   const activeIndex = computed(() => {
@@ -215,6 +226,11 @@
       authStore.setSession(response)
       ElMessage.success('登录成功')
       closeAuthDialog()
+      if (authStore.isAdmin) {
+        await router.push('/admin')
+      } else {
+        await router.push('/') // 登录后默认跳转到工作台
+      }
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || error?.data?.message || '登录失败')
     } finally {
@@ -236,6 +252,9 @@
       authStore.setSession(response)
       ElMessage.success('注册成功，已为你自动登录')
       closeAuthDialog()
+      if (authStore.isAdmin) {
+        await router.push('/admin')
+      }
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || error?.data?.message || '注册失败')
     } finally {
@@ -274,6 +293,7 @@
       ElMessage.error(error?.data?.statusMessage || error?.data?.message || '退出失败')
     } finally {
       authStore.clearSession()
+      await router.push('/')
     }
   }
 
@@ -410,7 +430,7 @@
         </el-dropdown>
       </template>
     </div>
-    <div class="flex justify-evenly my-2!">
+    <div v-if="!authStore.isAdmin" class="flex justify-evenly my-2!">
       <el-input
         v-if="!isCollapse"
         v-model="searchQuery"
@@ -431,6 +451,10 @@
           @click="handleCreateNote"
         />
       </el-tooltip>
+    </div>
+
+    <div v-else v-show="!isCollapse" class="font-bold px-5 mb-2">
+      <el-tag type="success">管理员账户</el-tag>
     </div>
 
     <Dialog
@@ -535,40 +559,75 @@
       :collapse="isCollapse"
       :collapse-transition="false"
     >
-      <NuxtLink to="/">
-        <el-menu-item index="1">
-          <el-icon><icon-menu /></el-icon>
-          <template #title>工作台</template>
-        </el-menu-item>
-      </NuxtLink>
+      <template v-if="!authStore.isAdmin">
+        <NuxtLink to="/">
+          <el-menu-item index="1">
+            <el-icon><icon-menu /></el-icon>
+            <template #title>工作台</template>
+          </el-menu-item>
+        </NuxtLink>
 
-      <NuxtLink to="/my-notes">
-        <el-menu-item index="2">
-          <el-icon><document /></el-icon>
-          <template #title>我的笔记</template>
-        </el-menu-item>
-      </NuxtLink>
+        <NuxtLink to="/my-notes">
+          <el-menu-item index="2">
+            <el-icon><document /></el-icon>
+            <template #title>我的笔记</template>
+          </el-menu-item>
+        </NuxtLink>
 
-      <NuxtLink to="/favourite">
-        <el-menu-item index="3">
-          <el-icon><star /></el-icon>
-          <template #title>我的收藏</template>
-        </el-menu-item>
-      </NuxtLink>
+        <NuxtLink to="/favourite">
+          <el-menu-item index="3">
+            <el-icon><star /></el-icon>
+            <template #title>我的收藏</template>
+          </el-menu-item>
+        </NuxtLink>
 
-      <NuxtLink to="/recycle-bin">
-        <el-menu-item index="4">
-          <el-icon><delete /></el-icon>
-          <template #title>回收站</template>
-        </el-menu-item>
-      </NuxtLink>
+        <NuxtLink to="/recycle-bin">
+          <el-menu-item index="4">
+            <el-icon><delete /></el-icon>
+            <template #title>回收站</template>
+          </el-menu-item>
+        </NuxtLink>
 
-      <NuxtLink to="/settings">
-        <el-menu-item index="5">
-          <el-icon><setting /></el-icon>
-          <template #title>应用设置</template>
-        </el-menu-item>
-      </NuxtLink>
+        <NuxtLink to="/settings">
+          <el-menu-item index="5">
+            <el-icon><setting /></el-icon>
+            <template #title>应用设置</template>
+          </el-menu-item>
+        </NuxtLink>
+      </template>
+
+      <template v-else>
+        <NuxtLink to="/admin">
+          <el-menu-item index="6">
+            <el-icon><DataBoard /></el-icon>
+            <template #title>管理总览</template>
+          </el-menu-item>
+        </NuxtLink>
+        <NuxtLink to="/admin/users">
+          <el-menu-item index="7">
+            <el-icon><UserFilled /></el-icon>
+            <template #title>用户管理</template>
+          </el-menu-item>
+        </NuxtLink>
+        <NuxtLink to="/admin/notes">
+          <el-menu-item index="8">
+            <el-icon><Notebook /></el-icon>
+            <template #title>笔记管理</template>
+          </el-menu-item>
+        </NuxtLink>
+        <NuxtLink to="/admin/sessions">
+          <el-menu-item index="9">
+            <el-icon><Clock /></el-icon>
+            <template #title>登录日志</template>
+          </el-menu-item>
+        </NuxtLink>
+        <NuxtLink to="/admin/operations">
+          <el-menu-item index="10">
+            <el-icon><List /></el-icon>
+            <template #title>操作日志</template>
+          </el-menu-item>
+        </NuxtLink>
+      </template>
     </el-menu>
 
     <div

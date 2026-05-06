@@ -68,6 +68,7 @@ export default defineNuxtConfig({
         '@tiptap/vue-3/menus',
         'd3',
         'uuid',
+        'echarts',
       ],
     },
     css: {

@@ -34,7 +34,7 @@ async function resolveUserId(event: H3Event): Promise<number> {
   try {
     return await requireNoteOwner(event)
   } catch {
-    const config = getAuthConfig(event)
+    const config = getAuthConfig()
     const refreshToken = getCookie(event, config.authRefreshCookieName)
 
     if (!refreshToken) {

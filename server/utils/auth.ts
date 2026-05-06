@@ -1,6 +1,5 @@
 import { createHash, createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto'
 import { promisify } from 'node:util'
-import type { H3Event } from 'h3'
 import { createError } from 'h3'
 import { useRuntimeConfig } from '#imports'
 
@@ -30,8 +29,8 @@ export type AuthRuntimeConfig = {
   authCookieSecure: boolean
 }
 
-export function getAuthConfig(event: H3Event): AuthRuntimeConfig {
-  const runtimeConfig = useRuntimeConfig(event)
+export function getAuthConfig(): AuthRuntimeConfig {
+  const runtimeConfig = useRuntimeConfig()
 
   return {
     authSecret: String(runtimeConfig.authSecret || 'dev-only-change-me'),
@@ -141,6 +140,6 @@ export function verifyAccessToken(token: string, secret: string): AccessTokenPay
   return decoded
 }
 
-export function createAuthError(statusCode: number, statusMessage: string) {
-  return createError({ statusCode, statusMessage })
+export function createAuthError(statusCode: number, message: string) {
+  return createError({ statusCode, message })
 }

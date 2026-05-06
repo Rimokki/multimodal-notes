@@ -18,7 +18,7 @@ async function resolveUserId(event: H3Event): Promise<number> {
     const { user } = await requireAccessUser(event)
     return user.id
   } catch {
-    const config = getAuthConfig(event)
+    const config = getAuthConfig()
     const refreshToken = getCookie(event, config.authRefreshCookieName)
 
     if (!refreshToken) {

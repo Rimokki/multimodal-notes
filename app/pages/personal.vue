@@ -1,7 +1,7 @@
 <script lang="ts" setup>
   import { ElMessage } from 'element-plus'
   const authStore = useAuthStore()
-  const defaultAvatarUrl = '/images/original-avatar.png'
+  const defaultAvatarUrl = '/images/original_avatar.png'
   const changingPasswordVisible = ref(false)
   const changingPasswordLoading = ref(false)
   const updateProfileLoading = ref(false)
@@ -15,6 +15,7 @@
       email: string
       username: string | null
       avatarUrl: string | null
+      role: string
       isActive: boolean
       lastLoginAt: string | null
       createdAt: string
@@ -252,12 +253,6 @@
       changingPasswordLoading.value = false
     }
   }
-  // const registerTime = computed(() => {
-  //   if (!authStore.user?.createdAt) {
-  //     return '未知注册时间'
-  //   }
-  //   return new Date(authStore.user.createdAt).toLocaleString()
-  // })
 </script>
 
 <template>

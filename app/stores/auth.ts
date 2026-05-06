@@ -4,6 +4,7 @@ type AuthUser = {
   username: string | null
   avatarUrl: string | null
   isActive: boolean
+  role: string
   lastLoginAt: string | null
   createdAt: string
   updatedAt: string
@@ -30,6 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   const hydrated = ref(false)
 
   const isLoggedIn = computed(() => Boolean(user.value && accessToken.value))
+  const isAdmin = computed(() => user.value?.role === 'ADMIN')
   const accountName = computed(() => {
     return user.value?.username || ''
   })
@@ -132,6 +134,7 @@ export const useAuthStore = defineStore('auth', () => {
     accessTokenExpiresAt,
     hydrated,
     isLoggedIn,
+    isAdmin,
     accountName,
     setSession,
     clearSession,

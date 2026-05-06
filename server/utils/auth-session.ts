@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { deleteCookie, getCookie, getHeader, setCookie } from 'h3'
+import { deleteCookie, getCookie, getHeader, getRequestIP, setCookie } from 'h3'
 import { prisma } from './prisma'
 import {
   createAuthError,
@@ -16,6 +16,7 @@ type UserInfo = {
   username: string | null
   avatarUrl: string | null
   isActive: boolean
+  role: string
   lastLoginAt: Date | null
   createdAt: Date
   updatedAt: Date
@@ -28,6 +29,7 @@ export function toUserInfo(user: UserInfo) {
     username: user.username,
     avatarUrl: user.avatarUrl,
     isActive: user.isActive,
+    role: user.role,
     lastLoginAt: user.lastLoginAt,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
@@ -36,15 +38,15 @@ export function toUserInfo(user: UserInfo) {
 
 function getClientIp(event: H3Event): string | null {
   const forwarded = getHeader(event, 'x-forwarded-for')
-  if (!forwarded) {
-    return null
+  if (forwarded) {
+    const firstIp = forwarded.split(',')[0]
+    if (firstIp?.trim()) return firstIp.trim()
   }
-  const firstIp = forwarded.split(',')[0]
-  return firstIp?.trim() || null
+  return getRequestIP(event, { xForwardedFor: false }) || null
 }
 
 function getSessionCookieOptions(event: H3Event, maxAge: number) {
-  const config = getAuthConfig(event)
+  const config = getAuthConfig()
   const secure = process.env.NODE_ENV === 'production' ? true : config.authCookieSecure
 
   return {
@@ -57,14 +59,14 @@ function getSessionCookieOptions(event: H3Event, maxAge: number) {
 }
 
 export function clearRefreshCookie(event: H3Event) {
-  const config = getAuthConfig(event)
+  const config = getAuthConfig()
   deleteCookie(event, config.authRefreshCookieName, {
     path: '/',
   })
 }
 
 export async function createSessionAndTokens(event: H3Event, user: UserInfo) {
-  const config = getAuthConfig(event)
+  const config = getAuthConfig()
   const refreshToken = generateRefreshToken()
   const refreshTokenHash = hashRefreshToken(refreshToken)
   const expiresAt = new Date(Date.now() + config.authRefreshTokenTtlSec * 1000)
@@ -104,7 +106,7 @@ export async function createSessionAndTokens(event: H3Event, user: UserInfo) {
 }
 
 export async function rotateRefreshSession(event: H3Event) {
-  const config = getAuthConfig(event)
+  const config = getAuthConfig()
   const refreshToken = getCookie(event, config.authRefreshCookieName)
   if (!refreshToken) {
     throw createAuthError(401, 'Missing refresh token')
@@ -131,7 +133,7 @@ export async function rotateRefreshSession(event: H3Event) {
     }
 
     if (!currentSession.user.isActive) {
-      throw createAuthError(403, 'User disabled')
+      throw createAuthError(403, '用户已被禁用，请联系管理员')
     }
 
     await tx.userSession.update({
@@ -180,7 +182,7 @@ export async function rotateRefreshSession(event: H3Event) {
 }
 
 export async function revokeCurrentSessionByCookie(event: H3Event) {
-  const config = getAuthConfig(event)
+  const config = getAuthConfig()
   const refreshToken = getCookie(event, config.authRefreshCookieName)
   if (!refreshToken) {
     clearRefreshCookie(event)
@@ -202,7 +204,7 @@ export async function revokeCurrentSessionByCookie(event: H3Event) {
 }
 
 export async function requireAccessUser(event: H3Event) {
-  const config = getAuthConfig(event)
+  const config = getAuthConfig()
   const authHeader = getHeader(event, 'authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     throw createAuthError(401, 'Missing access token')
@@ -226,4 +228,12 @@ export async function requireAccessUser(event: H3Event) {
     user: toUserInfo(user),
     sessionId: payload.sid,
   }
+}
+
+export async function requireAdminUser(event: H3Event) {
+  const { user, sessionId } = await requireAccessUser(event)
+  if (user.role !== 'ADMIN') {
+    throw createAuthError(403, 'Admin access required')
+  }
+  return { user, sessionId }
 }

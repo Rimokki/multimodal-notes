@@ -55,7 +55,7 @@ function parsePositiveInt(value: unknown): number | null {
 export function parsePaginationParams(page?: unknown, pageSize?: unknown): ParsedPagination {
   const DEFAULT_PAGE = 1
   const DEFAULT_PAGE_SIZE = 5
-  const MAX_PAGE_SIZE = 50
+  const MAX_PAGE_SIZE = 100
 
   const parsedPage = parsePositiveInt(page) ?? DEFAULT_PAGE
   const parsedPageSize = Math.min(parsePositiveInt(pageSize) ?? DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE)

@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!user.isActive) {
-    throw createAuthError(403, 'User disabled')
+    throw createAuthError(403, '用户已被禁用，请联系管理员')
   }
 
   const matched = await verifyPassword(password, user.passwordHash)
