@@ -19,6 +19,8 @@
     { label: '修改用户', value: 'USER_UPDATE' },
     { label: '删除笔记', value: 'NOTE_DELETE' },
     { label: '重置密码', value: 'PASSWORD_RESET' },
+    { label: '发布通知', value: 'NOTIFICATION_BROADCAST' },
+    { label: '删除通知', value: 'NOTIFICATION_DELETE' },
   ]
 
   const actionTagMap: Record<
@@ -28,6 +30,8 @@
     USER_UPDATE: { label: '修改用户', type: 'warning' },
     NOTE_DELETE: { label: '删除笔记', type: 'danger' },
     PASSWORD_RESET: { label: '重置密码', type: 'warning' },
+    NOTIFICATION_BROADCAST: { label: '发布通知', type: 'success' },
+    NOTIFICATION_DELETE: { label: '删除通知', type: 'danger' },
   }
 
   const formatDateTime = (value: string | null) => {
@@ -52,6 +56,14 @@
       if (action === 'PASSWORD_RESET') {
         const target = obj.target || '未知用户'
         return `重置用户「${target}」的密码`
+      }
+      if (action === 'NOTIFICATION_BROADCAST') {
+        const title = obj.title || '无标题'
+        return `发布全站通知「${title}」`
+      }
+      if (action === 'NOTIFICATION_DELETE') {
+        const title = obj.title || '无标题'
+        return `删除通知「${title}」`
       }
       return Object.entries(obj)
         .map(([k, v]) => `${k}: ${v}`)

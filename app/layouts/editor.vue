@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { StarFilled } from '@element-plus/icons-vue'
+  import { Star } from 'lucide-vue-next'
 
   const router = useRouter()
   const { toggleFavorite } = useNotesApi()
@@ -94,12 +94,7 @@
         </div>
 
         <div class="flex items-center justify-between w-60 mr-4">
-          <el-button
-            :type="isMarked ? 'warning' : ''"
-            :icon="StarFilled"
-            circle
-            @click="toggleMark"
-          />
+          <el-button :type="isMarked ? 'warning' : ''" :icon="Star" circle @click="toggleMark" />
           <el-button @click="isExportDialogVisible = !isExportDialogVisible">导出</el-button>
           <el-button :type="isEditing ? '' : 'primary'" @click="toggleEditMode">
             {{ isEditing ? '预览' : '编辑' }}

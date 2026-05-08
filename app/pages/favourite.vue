@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { StarFilled } from '@element-plus/icons-vue'
+  import { Star } from 'lucide-vue-next'
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -103,7 +103,7 @@
             </p>
           </div>
 
-          <el-button :icon="StarFilled" circle type="warning" @click="removeFavorite(note)" />
+          <el-button :icon="Star" circle type="warning" @click="removeFavorite(note)" />
         </div>
       </el-card>
       <el-pagination

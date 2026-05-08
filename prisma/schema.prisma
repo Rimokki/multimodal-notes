@@ -26,7 +26,10 @@ model User {
   notes        Note[]
   assets       NoteAsset[]
   sessions     UserSession[]
-  adminLogs    AdminLog[]
+  adminLogs               AdminLog[]
+  sentNotifications       Notification[]     @relation("SentNotifications")
+  targetedNotifications   Notification[]
+  notificationReads       NotificationRead[]
 
   @@index([createdAt])
 }
@@ -72,6 +75,13 @@ enum AdminAction {
   USER_UPDATE
   NOTE_DELETE
   PASSWORD_RESET
+  NOTIFICATION_BROADCAST
+  NOTIFICATION_DELETE
+}
+
+enum NotificationType {
+  BROADCAST
+  TARGETED
 }
 
 model Note {
@@ -138,4 +148,35 @@ model AdminLog {
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
+}
+
+model Notification {
+  id        Int              @id @default(autoincrement())
+  type      NotificationType
+  title     String
+  content   String
+  userId    Int?
+  senderId  Int
+  createdAt DateTime         @default(now())
+
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender    User             @relation("SentNotifications", fields: [senderId], references: [id])
+  reads     NotificationRead[]
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@index([senderId])
+}
+
+model NotificationRead {
+  id             Int          @id @default(autoincrement())
+  notificationId Int
+  userId         Int
+  readAt         DateTime     @default(now())
+
+  notification   Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId])
 }

@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { Delete, RefreshLeft } from '@element-plus/icons-vue'
+  import { Trash2, RotateCcw } from 'lucide-vue-next'
 
   const authStore = useAuthStore()
   const { listNotes, restoreNote, purgeNote } = useNotesApi()
@@ -135,8 +135,8 @@
           </div>
 
           <div class="flex gap-2">
-            <el-button :icon="RefreshLeft" circle @click="onRestore(note)" />
-            <el-button :icon="Delete" circle type="danger" @click="onPurge(note)" />
+            <el-button :icon="RotateCcw" circle @click="onRestore(note)" />
+            <el-button :icon="Trash2" circle type="danger" @click="onPurge(note)" />
           </div>
         </div>
       </el-card>

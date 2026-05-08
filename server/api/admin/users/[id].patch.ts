@@ -2,6 +2,7 @@ import { prisma } from '../../../utils/prisma'
 import { requireAdminUser } from '../../../utils/auth-session'
 import { createAuthError } from '../../../utils/auth'
 import { logAdminAction } from '../../../utils/admin-log'
+import { createTargetedNotification } from '../../../utils/notification'
 
 type UpdateBody = {
   isActive?: boolean
@@ -53,6 +54,24 @@ export default defineEventHandler(async (event) => {
     target: targetLabel,
     changes,
   })
+
+  if (data.isActive !== undefined) {
+    const action = data.isActive ? '账号已被启用' : '账号已被禁用'
+    await createTargetedNotification(
+      '账号状态变更',
+      `管理员已${action}您的账号。${data.isActive === false ? '如需申诉，请联系管理员。' : ''}`,
+      admin.id,
+      id,
+    )
+  }
+  if (data.role !== undefined) {
+    await createTargetedNotification(
+      '角色变更',
+      `您的账号角色已被变更为 ${data.role === 'ADMIN' ? '管理员' : '普通用户'}。`,
+      admin.id,
+      id,
+    )
+  }
 
   return {
     user: {

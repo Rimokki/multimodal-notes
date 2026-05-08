@@ -2,6 +2,7 @@ import { prisma } from '../../../../utils/prisma'
 import { requireAdminUser } from '../../../../utils/auth-session'
 import { createAuthError, hashPassword } from '../../../../utils/auth'
 import { logAdminAction } from '../../../../utils/admin-log'
+import { createTargetedNotification } from '../../../../utils/notification'
 
 export default defineEventHandler(async (event) => {
   const { user: admin } = await requireAdminUser(event)
@@ -33,6 +34,13 @@ export default defineEventHandler(async (event) => {
   await logAdminAction(event, admin.id, 'PASSWORD_RESET', id, {
     target: targetLabel,
   })
+
+  await createTargetedNotification(
+    '密码已重置',
+    '管理员已重置您的密码为默认密码12345678，请尽快修改密码。',
+    admin.id,
+    id,
+  )
 
   return { success: true }
 })

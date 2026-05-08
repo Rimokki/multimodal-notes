@@ -2,23 +2,24 @@
   import type { FormInstance, FormRules } from 'element-plus'
   import { ref } from 'vue'
   import {
+    LogIn,
+    LogOut,
+    User,
+    Bell,
+    Trash2,
     Plus,
-    Delete,
     Star,
     Search,
-    Document,
-    Menu as IconMenu,
-    Setting,
-    Fold,
-    Expand,
-    DataBoard,
-    UserFilled,
     Notebook,
+    Layers2,
+    ChevronFirst,
+    ChevronLast,
+    Loader,
+    Presentation,
     Clock,
-    List,
-  } from '@element-plus/icons-vue'
-
-  import { LogIn, LogOut, User } from 'lucide-vue-next'
+    ClipboardList,
+    MessageCircleQuestionMark,
+  } from 'lucide-vue-next'
 
   type AuthResponse = {
     user: {
@@ -39,6 +40,12 @@
   const isCollapse = ref(false)
   const fullscreenLoading = ref(false)
   const isDialogVisible = ref(false)
+  const isNotificationVisible = ref(false)
+  const isNotificationDetailVisible = ref(false)
+  const selectedNotification = ref<any>(null)
+  const notificationStatus = ref('全部')
+  const notificationList = ref<any[]>([])
+  const notificationLoading = ref(false)
   const authMode = ref<'login' | 'register'>('login')
   const authLoading = ref(false)
   const authFormRef = ref<FormInstance>()
@@ -53,7 +60,9 @@
   const route = useRoute()
   const router = useRouter()
   const authStore = useAuthStore()
+  const notificationStore = useNotificationStore()
   const { createNote } = useNotesApi()
+  const { listNotifications } = useNotificationApi()
 
   const defaultAvatarUrl = '/images/original_avatar.png'
 
@@ -82,8 +91,9 @@
     '/admin': '6',
     '/admin/users': '7',
     '/admin/notes': '8',
-    '/admin/sessions': '9',
-    '/admin/operations': '10',
+    '/admin/notifications': '9',
+    '/admin/sessions': '10',
+    '/admin/operations': '11',
   }
 
   const activeIndex = computed(() => {
@@ -323,8 +333,58 @@
     router.push(`/search-result?query=${encodeURIComponent(searchQuery.value.trim())}`)
   }
 
+  const handleNotificationChange = async (value: string) => {
+    const filterMap: Record<string, 'all' | 'read' | 'unread'> = {
+      全部: 'all',
+      已读: 'read',
+      未读: 'unread',
+    }
+    const filter = filterMap[value] || 'all'
+    notificationLoading.value = true
+    try {
+      const res = await listNotifications(filter, 1, 50)
+      notificationList.value = res.notifications
+    } catch {
+      ElMessage.error('加载失败')
+    } finally {
+      notificationLoading.value = false
+    }
+  }
+
+  const handleNotificationOpen = () => {
+    handleNotificationChange(notificationStatus.value)
+  }
+
+  const handleNotificationClick = async (notification: any) => {
+    if (!notification.isRead) {
+      await notificationStore.markNotificationAsRead(notification.id)
+      notification.isRead = true
+    }
+    selectedNotification.value = notification
+    isNotificationDetailVisible.value = true
+  }
+
+  const handleMarkAllRead = async () => {
+    await notificationStore.markAllNotificationsAsRead()
+    notificationList.value.forEach((n) => (n.isRead = true))
+  }
+
+  watch(
+    () => authStore.isLoggedIn,
+    async (loggedIn) => {
+      if (loggedIn) {
+        await notificationStore.fetchUnreadCount()
+      } else {
+        notificationStore.reset()
+      }
+    },
+  )
+
   onMounted(async () => {
     await authStore.initialize()
+    if (authStore.isLoggedIn) {
+      await notificationStore.fetchUnreadCount()
+    }
   })
 </script>
 
@@ -348,39 +408,56 @@
           >
             登录
           </el-button>
-          <el-dropdown
-            v-else
-            trigger="hover"
-            placement="bottom-start"
-            :show-arrow="false"
-            popper-class="avatar-menu-popper"
-            @command="handleAvatarMenuCommand"
-          >
-            <el-avatar :size="36" :src="userAvatar" class="cursor-pointer translate-x-1.5" />
-            <template #dropdown>
-              <el-dropdown-menu class="font-medium">
-                <el-dropdown-item disabled class="user-menu-header">
-                  <div class="user-menu-profile">
-                    <el-avatar :size="40" :src="userAvatar" />
-                    <div class="user-menu-text">
-                      <div class="user-menu-name">{{ menuDisplayName }}</div>
-                      <div class="user-menu-sub">{{ menuSubLabel }}</div>
-                    </div>
-                  </div>
-                </el-dropdown-item>
-                <el-dropdown-item command="profile" class="flex items-center gap-2 py-1">
-                  <User :size="16" />个人中心
-                </el-dropdown-item>
-                <el-dropdown-item
-                  divided
-                  command="logout"
-                  class="logout-item flex items-center gap-2 py-1"
+          <div v-else class="flex items-center gap-0.5">
+            <el-tooltip
+              v-if="!authStore.isAdmin"
+              content="消息中心"
+              placement="bottom"
+              :show-arrow="false"
+            >
+              <div class="relative cursor-pointer" @click="isNotificationVisible = true">
+                <Bell :size="16" class="text-gray-700 outline-none" />
+                <span
+                  v-if="notificationStore.unreadCount > 0"
+                  class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] rounded-full min-w-4 h-4 flex items-center justify-center px-1"
                 >
-                  <LogOut :size="16" /> 退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+                  {{ notificationStore.unreadCount > 99 ? '99+' : notificationStore.unreadCount }}
+                </span>
+              </div>
+            </el-tooltip>
+            <el-dropdown
+              trigger="hover"
+              placement="bottom-start"
+              :show-arrow="false"
+              popper-class="avatar-menu-popper"
+              @command="handleAvatarMenuCommand"
+            >
+              <el-avatar :size="36" :src="userAvatar" class="cursor-pointer translate-x-1.5" />
+              <template #dropdown>
+                <el-dropdown-menu class="font-medium">
+                  <el-dropdown-item disabled class="user-menu-header">
+                    <div class="user-menu-profile">
+                      <el-avatar :size="40" :src="userAvatar" />
+                      <div class="user-menu-text">
+                        <div class="user-menu-name">{{ menuDisplayName }}</div>
+                        <div class="user-menu-sub">{{ menuSubLabel }}</div>
+                      </div>
+                    </div>
+                  </el-dropdown-item>
+                  <el-dropdown-item command="profile" class="flex items-center gap-2 py-1">
+                    <User :size="16" />个人中心
+                  </el-dropdown-item>
+                  <el-dropdown-item
+                    divided
+                    command="logout"
+                    class="logout-item flex items-center gap-2 py-1"
+                  >
+                    <LogOut :size="16" /> 退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </template>
 
@@ -395,6 +472,7 @@
         >
           <LogIn :size="16" />
         </el-button>
+
         <el-dropdown
           v-else
           trigger="hover"
@@ -438,7 +516,7 @@
         size="large"
         placeholder="搜索"
         clearable
-        class="el-border-radius rounded-input-12"
+        class="el-border-radius rounded-input"
         :prefix-icon="Search"
         @keyup.enter="handleSearch"
       />
@@ -487,7 +565,7 @@
                 v-model="authForm.email"
                 placeholder="请输入邮箱"
                 size="large"
-                class="rounded-input-12"
+                class="rounded-input"
                 @keyup.enter="handleAuthEnter"
               />
             </el-form-item>
@@ -499,7 +577,7 @@
                 show-password
                 placeholder="请输入密码"
                 size="large"
-                class="rounded-input-12"
+                class="rounded-input"
                 @keyup.enter="handleAuthEnter"
               />
             </el-form-item>
@@ -512,7 +590,7 @@
                   show-password
                   placeholder="请确认密码"
                   size="large"
-                  class="rounded-input-12"
+                  class="rounded-input"
                   @keyup.enter="handleAuthEnter"
                 />
               </el-form-item>
@@ -522,7 +600,7 @@
                   v-model="authForm.username"
                   placeholder="请输入用户名（3-20位，字母数字下划线）"
                   size="large"
-                  class="rounded-input-12"
+                  class="rounded-input"
                   @blur="validateUsernameOnBlur"
                   @keyup.enter="handleAuthEnter"
                 />
@@ -549,8 +627,105 @@
               注册
             </el-button>
           </div>
-        </div></template
-      >
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog
+      v-model="isNotificationVisible"
+      :show-footer="false"
+      :show-close="false"
+      width="40vw"
+      :close-on-click-modal="true"
+      :destroy-on-close="true"
+      :style="{ height: '60vh' }"
+      @open="handleNotificationOpen"
+    >
+      <template #header>
+        <div class="flex items-center font-bold text-base mb-2! gap-4 mx-4">
+          <span>消息中心</span>
+          <el-segmented
+            v-model="notificationStatus"
+            :options="['全部', '已读', '未读']"
+            @change="handleNotificationChange"
+          />
+          <div class="flex justify-end items-center ml-auto">
+            <el-button link type="primary" size="small" @click="handleMarkAllRead">
+              全部已读
+            </el-button>
+          </div>
+        </div>
+      </template>
+
+      <template #default>
+        <div class="flex-1 min-h-0 flex flex-col overflow-x-hidden">
+          <div v-if="notificationLoading" class="flex-1 flex items-center justify-center">
+            <el-icon class="is-loading" :size="24"><Loader /></el-icon>
+          </div>
+          <template v-else-if="notificationList.length > 0">
+            <el-scrollbar max-height="50vh">
+              <div
+                v-for="item in notificationList"
+                :key="item.id"
+                class="p-3 rounded-lg mb-2 cursor-pointer hover:bg-gray-50 transition-colors border border-gray-200 mx-4"
+                :class="{ 'bg-blue-50/50': !item.isRead }"
+                @click="handleNotificationClick(item)"
+              >
+                <div class="flex items-center justify-between mb-1 gap-2">
+                  <div class="flex items-center gap-2 min-w-0 flex-1">
+                    <el-tag
+                      size="small"
+                      :type="item.type === 'BROADCAST' ? 'warning' : 'info'"
+                      class="shrink-0"
+                    >
+                      {{ item.type === 'BROADCAST' ? '公告' : '提示' }}
+                    </el-tag>
+                    <span class="font-semibold text-sm truncate">{{ item.title }}</span>
+                  </div>
+                  <span v-if="!item.isRead" class="w-2 h-2 rounded-full bg-blue-500 shrink-0" />
+                </div>
+                <p class="text-sm text-gray-500 line-clamp-2">{{ item.content }}</p>
+                <div class="text-xs text-gray-400 mt-1">
+                  {{ new Date(item.createdAt).toLocaleString() }}
+                </div>
+              </div>
+            </el-scrollbar>
+          </template>
+          <el-empty v-else :image-size="120" description="暂无通知" />
+        </div>
+      </template>
+    </Dialog>
+
+    <Dialog
+      v-model="isNotificationDetailVisible"
+      :show-footer="false"
+      :show-close="true"
+      width="40vw"
+    >
+      <template #header>
+        <div class="flex items-center gap-2">
+          <el-tag
+            size="small"
+            :type="selectedNotification?.type === 'BROADCAST' ? 'warning' : 'info'"
+          >
+            {{ selectedNotification?.type === 'BROADCAST' ? '公告' : '提示' }}
+          </el-tag>
+          <span class="font-bold text-base">{{ selectedNotification?.title }}</span>
+        </div>
+      </template>
+      <template #default>
+        <div v-if="selectedNotification" class="space-y-3">
+          <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
+            {{ selectedNotification.content }}
+          </p>
+          <div
+            class="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-100"
+          >
+            <span>{{ selectedNotification.sender?.username || '系统' }}</span>
+            <span>{{ new Date(selectedNotification.createdAt).toLocaleString() }}</span>
+          </div>
+        </div>
+      </template>
     </Dialog>
 
     <el-menu
@@ -562,14 +737,14 @@
       <template v-if="!authStore.isAdmin">
         <NuxtLink to="/">
           <el-menu-item index="1">
-            <el-icon><icon-menu /></el-icon>
+            <el-icon><Layers2 /></el-icon>
             <template #title>工作台</template>
           </el-menu-item>
         </NuxtLink>
 
         <NuxtLink to="/my-notes">
           <el-menu-item index="2">
-            <el-icon><document /></el-icon>
+            <el-icon><Notebook /></el-icon>
             <template #title>我的笔记</template>
           </el-menu-item>
         </NuxtLink>
@@ -583,15 +758,15 @@
 
         <NuxtLink to="/recycle-bin">
           <el-menu-item index="4">
-            <el-icon><delete /></el-icon>
+            <el-icon><Trash2 /></el-icon>
             <template #title>回收站</template>
           </el-menu-item>
         </NuxtLink>
 
         <NuxtLink to="/settings">
           <el-menu-item index="5">
-            <el-icon><setting /></el-icon>
-            <template #title>应用设置</template>
+            <el-icon><MessageCircleQuestionMark /></el-icon>
+            <template #title>帮助中心</template>
           </el-menu-item>
         </NuxtLink>
       </template>
@@ -599,13 +774,13 @@
       <template v-else>
         <NuxtLink to="/admin">
           <el-menu-item index="6">
-            <el-icon><DataBoard /></el-icon>
+            <el-icon><Presentation /></el-icon>
             <template #title>管理总览</template>
           </el-menu-item>
         </NuxtLink>
         <NuxtLink to="/admin/users">
           <el-menu-item index="7">
-            <el-icon><UserFilled /></el-icon>
+            <el-icon><User /></el-icon>
             <template #title>用户管理</template>
           </el-menu-item>
         </NuxtLink>
@@ -615,15 +790,21 @@
             <template #title>笔记管理</template>
           </el-menu-item>
         </NuxtLink>
-        <NuxtLink to="/admin/sessions">
+        <NuxtLink to="/admin/notifications">
           <el-menu-item index="9">
+            <el-icon><Bell /></el-icon>
+            <template #title>通知管理</template>
+          </el-menu-item>
+        </NuxtLink>
+        <NuxtLink to="/admin/sessions">
+          <el-menu-item index="10">
             <el-icon><Clock /></el-icon>
             <template #title>登录日志</template>
           </el-menu-item>
         </NuxtLink>
         <NuxtLink to="/admin/operations">
-          <el-menu-item index="10">
-            <el-icon><List /></el-icon>
+          <el-menu-item index="11">
+            <el-icon><ClipboardList /></el-icon>
             <template #title>操作日志</template>
           </el-menu-item>
         </NuxtLink>
@@ -640,8 +821,8 @@
         @click="toggleCollapse"
       >
         <el-icon>
-          <Expand v-if="isCollapse" />
-          <Fold v-else />
+          <ChevronLast v-if="isCollapse" />
+          <ChevronFirst v-else />
         </el-icon>
       </el-button>
     </div>
@@ -770,8 +951,8 @@
     margin-top: 16px !important;
   }
 
-  .rounded-input-12 :deep(.el-input__wrapper) {
-    border-radius: 12px !important;
+  .rounded-input :deep(.el-input__wrapper) {
+    border-radius: 8px !important;
   }
 
   .auth-action-grid {

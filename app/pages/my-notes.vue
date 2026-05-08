@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { Delete, StarFilled } from '@element-plus/icons-vue'
+  import { Trash2, Star } from 'lucide-vue-next'
 
   const router = useRouter()
   const authStore = useAuthStore()
@@ -134,11 +134,11 @@
           <div class="flex gap-2">
             <el-button
               :type="note.isFavorite ? 'warning' : ''"
-              :icon="StarFilled"
+              :icon="Star"
               circle
               @click="onToggleFavorite(note)"
             />
-            <el-button :icon="Delete" circle @click="onDelete(note)" />
+            <el-button :icon="Trash2" circle @click="onDelete(note)" />
           </div>
         </div>
       </el-card>

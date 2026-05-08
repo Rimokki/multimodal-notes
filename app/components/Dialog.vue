@@ -80,10 +80,25 @@
   .custom-transition-dialog {
     border-radius: 12px !important;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .custom-transition-dialog .el-dialog__header {
     padding-bottom: 0 !important;
+  }
+
+  .custom-transition-dialog .el-dialog__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .custom-transition-dialog .el-dialog__title {
+    font-size: 16px !important;
+    font-weight: bold !important;
   }
 
   @media (max-width: 768px) {

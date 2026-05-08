@@ -40,7 +40,6 @@ export default defineNuxtConfig({
         'dayjs',
         'dayjs/plugin/*.js',
         'lodash-unified',
-        '@element-plus/icons-vue',
         'lucide-vue-next',
         '@tiptap/vue-3',
         '@tiptap/extensions',
