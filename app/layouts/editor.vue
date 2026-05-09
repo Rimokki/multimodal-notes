@@ -1,8 +1,9 @@
 <script setup lang="ts">
-  import { Star } from 'lucide-vue-next'
+  import { Star, Tag } from 'lucide-vue-next'
 
   const router = useRouter()
-  const { toggleFavorite } = useNotesApi()
+  const { toggleFavorite, getNoteTags, addNoteTag, removeNoteTag } = useNotesApi()
+  const { createTag } = useTagsApi()
   const { exportMarkdown, exportPdf, exportDocx } = useExport()
   const noteTitleVal = useState('noteTitle')
   const noteId = useState<number | null>('activeNoteId', () => null)
@@ -20,6 +21,77 @@
     if (noteSaveStatus.value === 'error') return '保存失败'
     return ''
   })
+
+  const isTagDialogVisible = ref(false)
+  const noteTags = ref<{ id: number; name: string }[]>([])
+  const tagInputValue = ref('')
+  const tagInputVisible = ref(false)
+  const tagInputRef = ref<InstanceType<(typeof import('element-plus'))['ElInput']>>()
+
+  const openTagDialog = async () => {
+    if (!noteId.value) {
+      ElMessage.warning('当前笔记尚未初始化')
+      return
+    }
+    isTagDialogVisible.value = true
+    await loadNoteTags()
+  }
+
+  const loadNoteTags = async () => {
+    if (!noteId.value) return
+    try {
+      const { tags } = await getNoteTags(noteId.value)
+      noteTags.value = tags
+    } catch {
+      // ignore
+    }
+  }
+
+  const handleTagClose = async (tag: { id: number; name: string }) => {
+    if (!noteId.value) return
+    try {
+      await removeNoteTag(noteId.value, tag.id)
+      noteTags.value = noteTags.value.filter((t) => t.id !== tag.id)
+    } catch {
+      ElMessage.error('移除标签失败')
+    }
+  }
+
+  const showTagInput = () => {
+    tagInputVisible.value = true
+    nextTick(() => {
+      tagInputRef.value?.focus()
+    })
+  }
+
+  const handleTagInputConfirm = async () => {
+    const name = tagInputValue.value.trim()
+    if (!name || !noteId.value) {
+      tagInputVisible.value = false
+      tagInputValue.value = ''
+      return
+    }
+
+    try {
+      const existing = noteTags.value.find((t) => t.name === name)
+      if (existing) {
+        ElMessage.warning('标签已存在')
+        tagInputValue.value = ''
+        tagInputVisible.value = false
+        return
+      }
+
+      const { tag } = await createTag(name)
+      await addNoteTag(noteId.value, tag.id)
+      noteTags.value.push(tag)
+      ElMessage.success('标签已添加')
+    } catch {
+      ElMessage.error('添加标签失败')
+    }
+
+    tagInputValue.value = ''
+    tagInputVisible.value = false
+  }
 
   const isExportDialogVisible = ref(false)
   const exportType = ref('markdown')
@@ -93,8 +165,12 @@
           </span>
         </div>
 
-        <div class="flex items-center justify-between w-60 mr-4">
+        <div class="flex items-center justify-between w-72 mr-4">
           <el-button :type="isMarked ? 'warning' : ''" :icon="Star" circle @click="toggleMark" />
+          <el-tooltip content="标签" placement="bottom" :show-arrow="false">
+            <el-button :icon="Tag" circle @click="openTagDialog" />
+          </el-tooltip>
+
           <el-button @click="isExportDialogVisible = !isExportDialogVisible">导出</el-button>
           <el-button :type="isEditing ? '' : 'primary'" @click="toggleEditMode">
             {{ isEditing ? '预览' : '编辑' }}
@@ -153,6 +229,44 @@
           导出的文件在其它软件打开时可能<span class="font-bold">无法保留完整格式</span>，请知悉。
         </p>
       </div>
+    </Dialog>
+
+    <Dialog v-model="isTagDialogVisible" width="360px" :show-footer="false">
+      <template #header>
+        <div class="font-bold">笔记标签</div>
+      </template>
+
+      <div class="flex flex-wrap gap-2 my-3 min-h-8">
+        <el-tag
+          v-for="tag in noteTags"
+          :key="tag.id"
+          closable
+          :disable-transitions="false"
+          @close="handleTagClose(tag)"
+        >
+          {{ tag.name }}
+        </el-tag>
+        <el-input
+          v-if="tagInputVisible"
+          ref="tagInputRef"
+          v-model="tagInputValue"
+          class="w-20! h-6!"
+          maxlength="15"
+          size="small"
+          @keyup.enter="handleTagInputConfirm"
+          @blur="handleTagInputConfirm"
+        />
+        <el-button
+          v-else
+          class="button-new-tag"
+          size="small"
+          :disabled="noteTags.length >= 5"
+          @click="showTagInput"
+        >
+          新建标签
+        </el-button>
+      </div>
+      <p class="text-xs text-gray-400">输入标签后按回车添加，单个标签不大于15字，至多5个标签</p>
     </Dialog>
   </div>
 </template>

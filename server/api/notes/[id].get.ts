@@ -18,6 +18,9 @@ export default defineEventHandler(async (event) => {
         },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       },
+      tags: {
+        include: { tag: true },
+      },
     },
   })
 

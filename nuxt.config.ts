@@ -16,9 +16,9 @@ export default defineNuxtConfig({
     authRefreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'mn_refresh_token',
     authCookieSecure: process.env.AUTH_COOKIE_SECURE === 'true',
   },
-  app: {
-    pageTransition: { name: 'page', mode: 'out-in' },
-  },
+  // app: {
+  //   pageTransition: { name: 'page', mode: 'out-in' },
+  // },
   imports: {
     autoImport: true,
     dirs: ['composables'],

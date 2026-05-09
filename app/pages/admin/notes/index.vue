@@ -6,7 +6,7 @@
   const { listNotes, deleteNote } = useAdminApi()
   const authStore = useAuthStore()
 
-  const loading = ref(false)
+  const { ready, wait } = useMinimumDelay(500)
   const notes = ref<any[]>([])
   const total = ref(0)
   const page = ref(1)
@@ -21,15 +21,12 @@
   }
 
   const loadNotes = async () => {
-    loading.value = true
     try {
-      const res = await listNotes(page.value, pageSize.value, keyword.value || undefined)
+      const res = await wait(listNotes(page.value, pageSize.value, keyword.value || undefined))
       notes.value = res.notes
       total.value = res.total
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || '加载笔记列表失败')
-    } finally {
-      loading.value = false
     }
   }
 
@@ -87,44 +84,72 @@
         @clear="handleSearch"
       />
     </div>
-    <div v-loading="loading" class="rounded-xl overflow-hidden border-2 border-gray-200 p-4 pt-2">
-      <el-table :data="notes" style="width: 100%" :row-style="{ height: '60px' }">
-        <el-table-column prop="id" label="ID" width="60" />
-        <el-table-column prop="title" label="标题" min-width="150">
-          <template #default="{ row }">
-            {{ row.title || '无标题笔记' }}
+    <div class="rounded-xl overflow-hidden border-2 border-gray-200 p-4 pt-2">
+      <template v-if="!ready">
+        <el-skeleton :rows="0" animated>
+          <template #template>
+            <div v-for="i in 5" :key="i" class="flex items-center" style="height: 60px">
+              <div style="width: 60px">
+                <el-skeleton-item variant="text" style="width: 30px; height: 16px" />
+              </div>
+              <div style="min-width: 150px; flex: 1">
+                <el-skeleton-item variant="text" style="width: 60%; height: 16px" />
+              </div>
+              <div style="min-width: 200px; flex: 1">
+                <el-skeleton-item variant="text" style="width: 80%; height: 16px" />
+              </div>
+              <div style="min-width: 140px">
+                <el-skeleton-item variant="text" style="width: 50%; height: 16px" />
+              </div>
+              <div style="width: 170px">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
+              <div style="width: 80px; display: flex; justify-content: center">
+                <el-skeleton-item variant="circle" style="width: 32px; height: 32px" />
+              </div>
+            </div>
           </template>
-        </el-table-column>
-        <el-table-column label="摘要" min-width="200">
-          <template #default="{ row }">
-            <span class="text-gray-500 truncate block" style="max-width: 240px">
-              {{ row.excerpt || '暂无内容' }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column label="作者" min-width="140">
-          <template #default="{ row }">
-            {{ row.owner?.username || row.owner?.email || '已删除用户' }}
-          </template>
-        </el-table-column>
-        <el-table-column label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.isDeleted ? 'info' : 'success'" size="small">
-              {{ row.isDeleted ? '已删除' : '正常' }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="更新时间" width="170">
-          <template #default="{ row }">
-            {{ formatDateTime(row.updatedAt) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="80" align="center">
-          <template #default="{ row }">
-            <el-button type="danger" :icon="Trash2" circle @click="confirmDelete(row)" />
-          </template>
-        </el-table-column>
-      </el-table>
+        </el-skeleton>
+      </template>
+      <template v-else>
+        <el-table :data="notes" style="width: 100%" :row-style="{ height: '60px' }">
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="title" label="标题" min-width="150">
+            <template #default="{ row }">
+              {{ row.title || '无标题笔记' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="摘要" min-width="200">
+            <template #default="{ row }">
+              <span class="text-gray-500 truncate block" style="max-width: 240px">
+                {{ row.excerpt || '暂无内容' }}
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column label="作者" min-width="140">
+            <template #default="{ row }">
+              {{ row.owner?.username || row.owner?.email || '已删除用户' }}
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="80">
+            <template #default="{ row }">
+              <el-tag :type="row.isDeleted ? 'info' : 'success'" size="small">
+                {{ row.isDeleted ? '已删除' : '正常' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="更新时间" width="170">
+            <template #default="{ row }">
+              {{ formatDateTime(row.updatedAt) }}
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="80" align="center">
+            <template #default="{ row }">
+              <el-button type="danger" :icon="Trash2" circle @click="confirmDelete(row)" />
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
       <div class="flex justify-end mt-4">
         <el-pagination
           v-model:current-page="page"

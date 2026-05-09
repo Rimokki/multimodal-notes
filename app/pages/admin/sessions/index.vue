@@ -6,7 +6,7 @@
   const { listSessions } = useAdminApi()
   const authStore = useAuthStore()
 
-  const loading = ref(false)
+  const { ready, wait } = useMinimumDelay(500)
   const sessions = ref<any[]>([])
   const total = ref(0)
   const page = ref(1)
@@ -34,15 +34,12 @@
   }
 
   const loadSessions = async () => {
-    loading.value = true
     try {
-      const res = await listSessions(page.value, pageSize.value)
+      const res = await wait(listSessions(page.value, pageSize.value))
       sessions.value = res.sessions
       total.value = res.total
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || '加载登录日志失败')
-    } finally {
-      loading.value = false
     }
   }
 
@@ -69,55 +66,83 @@
       <h1 class="font-bold text-2xl">登录日志</h1>
       <span class="text-sm text-gray-400">共 {{ total }} 条记录</span>
     </div>
-    <div v-loading="loading" class="rounded-xl overflow-hidden border-2 border-gray-200 p-4 pt-2">
-      <el-table :data="sessions" style="width: 100%" :row-style="{ height: '60px' }">
-        <el-table-column label="用户" min-width="160">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="font-medium">{{
-                row.user?.username || row.user?.email || '未知用户'
-              }}</span>
-              <span class="text-xs text-gray-400">{{ row.user?.email }}</span>
+    <div class="rounded-xl overflow-hidden border-2 border-gray-200 p-4 pt-2">
+      <template v-if="!ready">
+        <el-skeleton :rows="0" animated>
+          <template #template>
+            <div v-for="i in 5" :key="i" class="flex items-center" style="height: 60px">
+              <div style="width: 60px">
+                <el-skeleton-item variant="text" style="width: 30px; height: 16px" />
+              </div>
+              <div style="min-width: 360px; flex: 1">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
+              <div style="min-width: 120px">
+                <el-skeleton-item variant="text" style="width: 50%; height: 16px" />
+              </div>
+              <div style="width: 80px">
+                <el-skeleton-item variant="text" style="width: 30px; height: 16px" />
+              </div>
+              <div style="width: 170px">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
+              <div style="width: 170px">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
             </div>
           </template>
-        </el-table-column>
-        <el-table-column label="状态" width="90">
-          <template #default="{ row }">
-            <el-tag :type="getStatusInfo(row).type" size="small">
-              {{ getStatusInfo(row).text }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="设备" width="100">
-          <template #default="{ row }">
-            <div class="flex items-center gap-1 text-gray-600">
-              <Monitor :size="14" />
-              <span>{{ parseUserAgent(row.userAgent) }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="IP 地址" width="130">
-          <template #default="{ row }">
-            <div class="flex items-center gap-1 text-gray-600">
-              <MapPin :size="14" />
-              <span>{{ row.ipAddress || '-' }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="登录时间" width="170">
-          <template #default="{ row }">
-            <div class="flex items-center gap-1 text-gray-600">
-              <Clock :size="14" />
-              <span>{{ formatDateTime(row.createdAt) }}</span>
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column label="过期时间" width="170">
-          <template #default="{ row }">
-            {{ formatDateTime(row.expiresAt) }}
-          </template>
-        </el-table-column>
-      </el-table>
+        </el-skeleton>
+      </template>
+      <template v-else>
+        <el-table :data="sessions" style="width: 100%" :row-style="{ height: '60px' }">
+          <el-table-column label="用户" min-width="160">
+            <template #default="{ row }">
+              <div class="flex flex-col">
+                <span class="font-medium">{{
+                  row.user?.username || row.user?.email || '未知用户'
+                }}</span>
+                <span class="text-xs text-gray-400">{{ row.user?.email }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template #default="{ row }">
+              <el-tag :type="getStatusInfo(row).type" size="small">
+                {{ getStatusInfo(row).text }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="设备" width="100">
+            <template #default="{ row }">
+              <div class="flex items-center gap-1 text-gray-600">
+                <Monitor :size="14" />
+                <span>{{ parseUserAgent(row.userAgent) }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="IP 地址" width="130">
+            <template #default="{ row }">
+              <div class="flex items-center gap-1 text-gray-600">
+                <MapPin :size="14" />
+                <span>{{ row.ipAddress || '-' }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="登录时间" width="170">
+            <template #default="{ row }">
+              <div class="flex items-center gap-1 text-gray-600">
+                <Clock :size="14" />
+                <span>{{ formatDateTime(row.createdAt) }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="过期时间" width="170">
+            <template #default="{ row }">
+              {{ formatDateTime(row.expiresAt) }}
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
       <div class="flex justify-end mt-4">
         <el-pagination
           v-model:current-page="page"
@@ -125,7 +150,7 @@
           :total="total"
           :page-sizes="[20, 50, 100]"
           layout="total, sizes, prev, pager, next"
-          class="mb-4 mr-2"
+          class="my-2"
           @current-change="handlePageChange"
           @size-change="handleSizeChange"
         />

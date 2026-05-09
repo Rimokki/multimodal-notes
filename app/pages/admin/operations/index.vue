@@ -6,7 +6,7 @@
   const { listLogs } = useAdminApi()
   const authStore = useAuthStore()
 
-  const loading = ref(false)
+  const { ready, wait } = useMinimumDelay(500)
   const logs = ref<any[]>([])
   const total = ref(0)
   const page = ref(1)
@@ -74,20 +74,19 @@
   }
 
   const loadLogs = async () => {
-    loading.value = true
     try {
-      const res = await listLogs(
-        page.value,
-        pageSize.value,
-        keyword.value || undefined,
-        actionFilter.value || undefined,
+      const res = await wait(
+        listLogs(
+          page.value,
+          pageSize.value,
+          keyword.value || undefined,
+          actionFilter.value || undefined,
+        ),
       )
       logs.value = res.logs
       total.value = res.total
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || '加载操作日志失败')
-    } finally {
-      loading.value = false
     }
   }
 
@@ -150,45 +149,73 @@
       </el-select>
     </div>
 
-    <div v-loading="loading" class="rounded-xl overflow-hidden border-2 border-gray-200 p-4 pt-2">
-      <el-table :data="logs" style="width: 100%" :row-style="{ height: '60px' }">
-        <el-table-column label="ID" width="60" prop="id" />
-        <el-table-column label="操作者" min-width="160">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="font-medium">{{
-                row.admin?.username || row.admin?.email || '未知'
-              }}</span>
-              <span class="text-xs text-gray-400">{{ row.admin?.email }}</span>
+    <div class="rounded-xl overflow-hidden border-2 border-gray-200 p-4 pt-2">
+      <template v-if="!ready">
+        <el-skeleton :rows="0" animated>
+          <template #template>
+            <div v-for="i in 5" :key="i" class="flex items-center" style="height: 60px">
+              <div style="width: 60px">
+                <el-skeleton-item variant="text" style="width: 30px; height: 16px" />
+              </div>
+              <div style="min-width: 360px; flex: 1">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
+              <div style="min-width: 120px">
+                <el-skeleton-item variant="text" style="width: 50%; height: 16px" />
+              </div>
+              <div style="width: 80px">
+                <el-skeleton-item variant="text" style="width: 30px; height: 16px" />
+              </div>
+              <div style="width: 170px">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
+              <div style="width: 170px">
+                <el-skeleton-item variant="text" style="width: 70%; height: 16px" />
+              </div>
             </div>
           </template>
-        </el-table-column>
-        <el-table-column label="操作类型" width="120">
-          <template #default="{ row }">
-            <el-tag :type="actionTagMap[row.action]?.type || 'info'" size="small">
-              {{ actionTagMap[row.action]?.label || row.action }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="目标 ID" width="90" prop="targetId">
-          <template #default="{ row }">
-            <span>{{ row.targetId ?? '-' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作详情" min-width="360">
-          <template #default="{ row }">
-            <span class="text-gray-600 text-sm">{{ formatDetail(row.action, row.detail) }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作时间" width="170">
-          <template #default="{ row }">
-            <div class="flex items-center gap-1 text-gray-600">
-              <Clock :size="14" />
-              <span>{{ formatDateTime(row.createdAt) }}</span>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+        </el-skeleton>
+      </template>
+      <template v-else>
+        <el-table :data="logs" style="width: 100%" :row-style="{ height: '60px' }">
+          <el-table-column label="ID" width="60" prop="id" />
+          <el-table-column label="操作者" min-width="160">
+            <template #default="{ row }">
+              <div class="flex flex-col">
+                <span class="font-medium">{{
+                  row.admin?.username || row.admin?.email || '未知'
+                }}</span>
+                <span class="text-xs text-gray-400">{{ row.admin?.email }}</span>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作类型" width="120">
+            <template #default="{ row }">
+              <el-tag :type="actionTagMap[row.action]?.type || 'info'" size="small">
+                {{ actionTagMap[row.action]?.label || row.action }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="目标 ID" width="90" prop="targetId">
+            <template #default="{ row }">
+              <span>{{ row.targetId ?? '-' }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作详情" min-width="360">
+            <template #default="{ row }">
+              <span class="text-gray-600 text-sm">{{ formatDetail(row.action, row.detail) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作时间" width="170">
+            <template #default="{ row }">
+              <div class="flex items-center gap-1 text-gray-600">
+                <Clock :size="14" />
+                <span>{{ formatDateTime(row.createdAt) }}</span>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
       <div class="flex justify-end mt-4">
         <el-pagination
           v-model:current-page="page"
@@ -196,7 +223,7 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
-          class="mb-4 mr-2"
+          class="my-2"
           @current-change="handlePageChange"
           @size-change="handleSizeChange"
         />

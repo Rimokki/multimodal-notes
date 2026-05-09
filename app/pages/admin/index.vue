@@ -7,7 +7,7 @@
   const { getStats } = useAdminApi()
   const authStore = useAuthStore()
 
-  const loading = ref(false)
+  const { ready, wait } = useMinimumDelay(500)
   const stats = ref({
     totalUsers: 0,
     totalNotes: 0,
@@ -71,14 +71,11 @@
   }
 
   const loadStats = async () => {
-    loading.value = true
     try {
-      stats.value = await getStats()
+      stats.value = await wait(getStats())
       nextTick(renderCharts)
     } catch (error: any) {
       ElMessage.error(error?.data?.statusMessage || '加载统计数据失败')
-    } finally {
-      loading.value = false
     }
   }
 
@@ -101,52 +98,77 @@
       <h1 class="font-bold text-2xl">管理总览</h1>
       <span class="text-sm text-gray-400">{{ authStore.accountName }}</span>
     </div>
-    <div v-loading="loading" class="grid grid-cols-4 gap-4">
-      <el-card shadow="hover">
-        <div class="flex items-center gap-3 py-1">
-          <Users :size="28" class="text-blue-500" />
-          <div>
-            <div class="text-sm text-gray-500">用户总数</div>
-            <div class="text-2xl font-bold">{{ stats.totalUsers }}</div>
+    <template v-if="!ready">
+      <div class="grid grid-cols-4 gap-4">
+        <el-card v-for="i in 4" :key="i" shadow="hover" class="h-26">
+          <el-skeleton :rows="0" animated>
+            <template #template>
+              <div class="flex items-center gap-3 py-1">
+                <el-skeleton-item variant="circle" style="width: 32px; height: 32px" />
+                <div class="flex-1">
+                  <el-skeleton-item variant="text" style="width: 60%; height: 10px" />
+                  <el-skeleton-item variant="text" style="width: 60%; height: 10px" />
+                </div>
+              </div>
+            </template>
+          </el-skeleton>
+        </el-card>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mt-6 h-83">
+        <el-card v-for="i in 2" :key="i" shadow="hover">
+          <el-skeleton :rows="7" animated> </el-skeleton>
+        </el-card>
+      </div>
+    </template>
+
+    <template v-else>
+      <div class="grid grid-cols-4 gap-4">
+        <el-card shadow="hover">
+          <div class="flex items-center gap-3 py-1">
+            <Users :size="28" class="text-blue-500" />
+            <div>
+              <div class="text-sm text-gray-500">用户总数</div>
+              <div class="text-2xl font-bold">{{ stats.totalUsers }}</div>
+            </div>
           </div>
-        </div>
-      </el-card>
-      <el-card shadow="hover">
-        <div class="flex items-center gap-3 py-1">
-          <FileText :size="28" class="text-green-500" />
-          <div>
-            <div class="text-sm text-gray-500">笔记总数</div>
-            <div class="text-2xl font-bold">{{ stats.totalNotes }}</div>
+        </el-card>
+        <el-card shadow="hover">
+          <div class="flex items-center gap-3 py-1">
+            <FileText :size="28" class="text-green-500" />
+            <div>
+              <div class="text-sm text-gray-500">笔记总数</div>
+              <div class="text-2xl font-bold">{{ stats.totalNotes }}</div>
+            </div>
           </div>
-        </div>
-      </el-card>
-      <el-card shadow="hover">
-        <div class="flex items-center gap-3 py-1">
-          <UserCheck :size="28" class="text-orange-500" />
-          <div>
-            <div class="text-sm text-gray-500">近期活跃用户</div>
-            <div class="text-2xl font-bold">{{ stats.activeUsers }}</div>
+        </el-card>
+        <el-card shadow="hover">
+          <div class="flex items-center gap-3 py-1">
+            <UserCheck :size="28" class="text-orange-500" />
+            <div>
+              <div class="text-sm text-gray-500">近期活跃用户</div>
+              <div class="text-2xl font-bold">{{ stats.activeUsers }}</div>
+            </div>
           </div>
-        </div>
-      </el-card>
-      <el-card shadow="hover">
-        <div class="flex items-center gap-3 py-1">
-          <UserPlus :size="28" class="text-purple-500" />
-          <div>
-            <div class="text-sm text-gray-500">近期新增用户</div>
-            <div class="text-2xl font-bold">{{ stats.recentUsers }}</div>
+        </el-card>
+        <el-card shadow="hover">
+          <div class="flex items-center gap-3 py-1">
+            <UserPlus :size="28" class="text-purple-500" />
+            <div>
+              <div class="text-sm text-gray-500">近期新增用户</div>
+              <div class="text-2xl font-bold">{{ stats.recentUsers }}</div>
+            </div>
           </div>
-        </div>
-      </el-card>
-    </div>
-    <div class="grid grid-cols-2 gap-4 mt-6">
-      <el-card shadow="hover">
-        <div ref="userChartRef" class="h-72"></div>
-      </el-card>
-      <el-card shadow="hover">
-        <div ref="noteChartRef" class="h-72"></div>
-      </el-card>
-    </div>
+        </el-card>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mt-6">
+        <el-card shadow="hover">
+          <div ref="userChartRef" class="h-72"></div>
+        </el-card>
+        <el-card shadow="hover">
+          <div ref="noteChartRef" class="h-72"></div>
+        </el-card>
+      </div>
+    </template>
   </div>
 </template>
 

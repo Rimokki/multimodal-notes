@@ -10,6 +10,11 @@ export type NoteItem = {
   createdAt: string
   updatedAt: string
   assets?: NoteAssetItem[]
+  tags?: NoteTagItem[]
+}
+
+export type NoteTagItem = {
+  tag: { id: number; name: string }
 }
 
 export type NoteAssetItem = {
@@ -156,6 +161,25 @@ export function useNotesApi() {
     })
   }
 
+  const getNoteTags = async (noteId: number) => {
+    return await request<{ tags: { id: number; name: string }[] }>(`/api/notes/${noteId}/tags`, {
+      method: 'GET',
+    })
+  }
+
+  const addNoteTag = async (noteId: number, tagId: number) => {
+    return await request<{ tag: { id: number; name: string } }>(`/api/notes/${noteId}/tags`, {
+      method: 'POST',
+      body: { tagId },
+    })
+  }
+
+  const removeNoteTag = async (noteId: number, tagId: number) => {
+    return await request<{ success: boolean }>(`/api/notes/${noteId}/tags/${tagId}`, {
+      method: 'DELETE',
+    })
+  }
+
   return {
     listNotes,
     createNote,
@@ -166,5 +190,8 @@ export function useNotesApi() {
     restoreNote,
     purgeNote,
     uploadNoteAsset,
+    getNoteTags,
+    addNoteTag,
+    removeNoteTag,
   }
 }

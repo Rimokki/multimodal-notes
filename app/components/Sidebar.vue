@@ -87,7 +87,7 @@
     '/my-notes': '2',
     '/favourite': '3',
     '/recycle-bin': '4',
-    '/settings': '5',
+    '/about': '5',
     '/admin': '6',
     '/admin/users': '7',
     '/admin/notes': '8',
@@ -763,10 +763,10 @@
           </el-menu-item>
         </NuxtLink>
 
-        <NuxtLink to="/settings">
+        <NuxtLink to="/about">
           <el-menu-item index="5">
             <el-icon><MessageCircleQuestionMark /></el-icon>
-            <template #title>帮助中心</template>
+            <template #title>快速指南</template>
           </el-menu-item>
         </NuxtLink>
       </template>
@@ -775,7 +775,7 @@
         <NuxtLink to="/admin">
           <el-menu-item index="6">
             <el-icon><Presentation /></el-icon>
-            <template #title>管理总览</template>
+            <template #title>总览面板</template>
           </el-menu-item>
         </NuxtLink>
         <NuxtLink to="/admin/users">

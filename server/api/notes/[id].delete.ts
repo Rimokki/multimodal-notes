@@ -63,11 +63,25 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const noteTags = await prisma.noteTag.findMany({
+    where: { noteId },
+    select: { tagId: true },
+  })
+  const tagIds = noteTags.map((nt) => nt.tagId)
+
+  await prisma.noteTag.deleteMany({ where: { noteId } })
   await prisma.note.delete({
     where: {
       id: noteId,
     },
   })
+
+  for (const tagId of tagIds) {
+    const count = await prisma.noteTag.count({ where: { tagId } })
+    if (count === 0) {
+      await prisma.tag.delete({ where: { id: tagId } })
+    }
+  }
 
   return { success: true }
 })
