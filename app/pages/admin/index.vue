@@ -7,6 +7,8 @@
   const { getStats } = useAdminApi()
   const authStore = useAuthStore()
 
+  useServerAuth()
+
   const { ready, wait } = useMinimumDelay(500)
   const stats = ref({
     totalUsers: 0,
@@ -70,18 +72,39 @@
     noteChart?.resize()
   }
 
+  const fetchStats = async () => {
+    return await getStats()
+  }
+
+  const { data: statsData } = await useAsyncData('admin-stats', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchStats()
+  })
+
+  if (statsData.value) {
+    stats.value = statsData.value
+    ready.value = true
+  } else if (statsData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadStats = async () => {
     try {
-      stats.value = await wait(getStats())
+      stats.value = await wait(fetchStats())
       nextTick(renderCharts)
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || '加载统计数据失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || '加载统计数据失败')
+      }
     }
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadStats()
+    if (!statsData.value && authStore.isLoggedIn) {
+      await loadStats()
+    } else if (statsData.value) {
+      nextTick(renderCharts)
+    }
     window.addEventListener('resize', handleResize)
   })
 

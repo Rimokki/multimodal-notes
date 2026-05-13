@@ -206,28 +206,49 @@ export async function revokeCurrentSessionByCookie(event: H3Event) {
 export async function requireAccessUser(event: H3Event) {
   const config = getAuthConfig()
   const authHeader = getHeader(event, 'authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw createAuthError(401, 'Missing access token')
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7).trim()
+    const payload = verifyAccessToken(token, config.authSecret)
+    if (payload) {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.sub },
+      })
+
+      if (user?.isActive) {
+        return {
+          user: toUserInfo(user),
+          sessionId: payload.sid,
+        }
+      }
+    }
   }
 
-  const token = authHeader.slice(7).trim()
-  const payload = verifyAccessToken(token, config.authSecret)
-  if (!payload) {
-    throw createAuthError(401, 'Invalid access token')
+  // Fallback: SSR 渲染期间通过 cookie 认证（无 Authorization header）
+  const authContext = event.context.auth as { user: ReturnType<typeof toUserInfo>; sessionId: string } | undefined
+  if (authContext?.user) {
+    return { user: authContext.user, sessionId: authContext.sessionId }
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: payload.sub },
-  })
+  // 最后一次尝试：直接读取 cookie 查找会话（用于 SSR 期间的内部 API 调用）
+  const refreshToken = getCookie(event, config.authRefreshCookieName)
+  if (refreshToken) {
+    const refreshTokenHash = hashRefreshToken(refreshToken)
+    const now = new Date()
 
-  if (!user || !user.isActive) {
-    throw createAuthError(401, 'User not available')
+    const session = await prisma.userSession.findUnique({
+      where: { refreshTokenHash },
+      include: { user: true },
+    })
+
+    if (session && !session.revokedAt && session.expiresAt > now && session.user.isActive) {
+      return {
+        user: toUserInfo(session.user),
+        sessionId: session.id,
+      }
+    }
   }
 
-  return {
-    user: toUserInfo(user),
-    sessionId: payload.sid,
-  }
+  throw createAuthError(401, 'Missing access token')
 }
 
 export async function requireAdminUser(event: H3Event) {

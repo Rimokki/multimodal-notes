@@ -6,6 +6,8 @@
   const { listLogs } = useAdminApi()
   const authStore = useAuthStore()
 
+  useServerAuth()
+
   const { ready, wait } = useMinimumDelay(500)
   const logs = ref<any[]>([])
   const total = ref(0)
@@ -73,20 +75,37 @@
     }
   }
 
+  const fetchAdminLogs = async () => {
+    return await listLogs(
+      page.value,
+      pageSize.value,
+      keyword.value || undefined,
+      actionFilter.value || undefined,
+    )
+  }
+
+  const { data: adminLogsData } = await useAsyncData('admin-operations', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchAdminLogs()
+  })
+
+  if (adminLogsData.value) {
+    logs.value = adminLogsData.value.logs
+    total.value = adminLogsData.value.total
+    ready.value = true
+  } else if (adminLogsData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadLogs = async () => {
     try {
-      const res = await wait(
-        listLogs(
-          page.value,
-          pageSize.value,
-          keyword.value || undefined,
-          actionFilter.value || undefined,
-        ),
-      )
+      const res = await wait(fetchAdminLogs())
       logs.value = res.logs
       total.value = res.total
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || '加载操作日志失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || '加载操作日志失败')
+      }
     }
   }
 
@@ -112,8 +131,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadLogs()
+    if (!adminLogsData.value && authStore.isLoggedIn) {
+      await loadLogs()
+    }
   })
 </script>
 

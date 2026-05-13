@@ -6,6 +6,8 @@
   const { listUsers, updateUser, resetPassword } = useAdminApi()
   const authStore = useAuthStore()
 
+  useServerAuth()
+
   const { ready, wait } = useMinimumDelay(500)
   const users = ref<any[]>([])
   const total = ref(0)
@@ -18,13 +20,32 @@
     return new Date(value).toLocaleString()
   }
 
+  const fetchAdminUsers = async () => {
+    return await listUsers(page.value, pageSize.value, keyword.value || undefined)
+  }
+
+  const { data: adminUsersData } = await useAsyncData('admin-users', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchAdminUsers()
+  })
+
+  if (adminUsersData.value) {
+    users.value = adminUsersData.value.users
+    total.value = adminUsersData.value.total
+    ready.value = true
+  } else if (adminUsersData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadUsers = async () => {
     try {
-      const res = await wait(listUsers(page.value, pageSize.value, keyword.value || undefined))
+      const res = await wait(fetchAdminUsers())
       users.value = res.users
       total.value = res.total
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || '加载用户列表失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || '加载用户列表失败')
+      }
     }
   }
 
@@ -72,8 +93,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadUsers()
+    if (!adminUsersData.value && authStore.isLoggedIn) {
+      await loadUsers()
+    }
   })
 </script>
 

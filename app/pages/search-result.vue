@@ -7,6 +7,8 @@
   const authStore = useAuthStore()
   const { listNotes } = useNotesApi()
 
+  useServerAuth()
+
   const searchResults = ref<NoteItem[]>([])
   const totalResults = ref(0)
   const queryParam = (route.query.query as string) || ''
@@ -110,6 +112,20 @@
     await router.push(`/editor?id=${noteId}`)
   }
 
+  const fetchSearchResults = async () => {
+    return await listNotes('all', searchInput.value, 1, 10)
+  }
+
+  const { data: searchData } = await useAsyncData('search-result', async () => {
+    if (!authStore.isLoggedIn || !queryParam) return null
+    return await fetchSearchResults()
+  })
+
+  if (searchData.value) {
+    searchResults.value = searchData.value.notes
+    totalResults.value = searchData.value.total
+  }
+
   const performSearch = async () => {
     if (!authStore.isLoggedIn) {
       ElMessage.warning('请先登录后搜索笔记')
@@ -117,16 +133,18 @@
     }
 
     try {
-      const searchResponse = await listNotes('all', searchInput.value, 1, 10)
+      const searchResponse = await fetchSearchResults()
       searchResults.value = searchResponse.notes
       totalResults.value = searchResponse.total
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载笔记失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载笔记失败')
+      }
     }
   }
 
   onMounted(() => {
-    if (queryParam) {
+    if (queryParam && !searchData.value) {
       performSearch()
     }
   })

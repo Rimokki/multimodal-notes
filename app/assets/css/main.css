@@ -11,3 +11,18 @@
 .selector::-webkit-scrollbar {
   display: none;
 }
+
+.page-enter-active,
+.page-leave-active {
+  transition: all 0.2s ease;
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateX(8px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateX(-8px);
+}
