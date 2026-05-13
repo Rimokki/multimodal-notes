@@ -4,6 +4,8 @@
   const authStore = useAuthStore()
   const { listNotes, restoreNote, purgeNote } = useNotesApi()
 
+  useServerAuth()
+
   const loading = ref(false)
   const { ready, wait } = useMinimumDelay(500)
   const notes = ref<NoteItem[]>([])
@@ -15,6 +17,25 @@
   const purgeLoading = ref(false)
   const pendingPurgeNote = ref<NoteItem | null>(null)
 
+  const fetchDeleted = async () => {
+    return await listNotes('deleted', '', currentPage.value, pageSize.value)
+  }
+
+  const { data: deletedData } = await useAsyncData('recycle-bin', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchDeleted()
+  })
+
+  if (deletedData.value) {
+    notes.value = deletedData.value.notes
+    total.value = deletedData.value.total
+    currentPage.value = deletedData.value.page
+    pageSize.value = deletedData.value.pageSize
+    ready.value = true
+  } else if (deletedData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadDeletedNotes = async () => {
     if (!authStore.isLoggedIn) {
       notes.value = []
@@ -25,13 +46,15 @@
 
     loading.value = true
     try {
-      const response = await wait(listNotes('deleted', '', currentPage.value, pageSize.value))
+      const response = await wait(fetchDeleted())
       notes.value = response.notes
       total.value = response.total
       currentPage.value = response.page
       pageSize.value = response.pageSize
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载回收站失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载回收站失败')
+      }
     } finally {
       loading.value = false
     }
@@ -97,8 +120,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadDeletedNotes()
+    if (!deletedData.value && authStore.isLoggedIn) {
+      await loadDeletedNotes()
+    }
   })
 </script>
 

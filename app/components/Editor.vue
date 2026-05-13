@@ -55,6 +55,7 @@
   import { Details } from '~/extensions/details'
   import { FileCard } from '~/extensions/file-card'
   import Canvas from '~/extensions/canvas'
+  import { MarkdownPaste } from '~/extensions/markdown-paste'
 
   const SuperscriptMd = Superscript.extend({
     renderMarkdown: (_node, h) => `^(${h.renderChildren(_node)})`,
@@ -103,25 +104,37 @@
   })
 
   const AudioMd = Audio.extend({
+    group: 'block',
+    atom: true,
+    selectable: true,
+    isolating: true,
+
     renderMarkdown: (node) => {
       const src = node.attrs?.src || ''
-      return src ? `<audio src="${src}"></audio>` : ''
+      return src ? `[audio:${src}](${src})\n\n` : ''
     },
-    parseMarkdown: (token, h) => {
-      return h.createNode('audio', { src: token.src || '' })
+
+    parseMarkdown: (token) => {
+      return {
+        type: 'audio',
+        attrs: {
+          src: token.src || '',
+        },
+      }
     },
+
     markdownTokenizer: {
       name: 'audio',
       level: 'block',
-      start: (src) => src.match(/<audio/)?.index ?? -1,
-      tokenize(src, _tokens, _h) {
-        const rule = /^<audio\s+src="([^"]+)"><\/audio>/
+      start: (src) => src.match(/^\[audio:/)?.index ?? -1,
+      tokenize(src) {
+        const rule = /^\[audio:([^\]]+)\]\(([^)]+)\)/
         const match = rule.exec(src)
         if (match) {
           return {
             type: 'audio',
             raw: match[0],
-            src: match[1],
+            src: match[2],
           }
         }
       },
@@ -192,8 +205,11 @@
         table: { resizable: true },
       }),
       Markdown.configure({
+        transformPastedText: true,
+        transformCopiedText: true,
         indentation: { style: 'space', size: 2 },
       }),
+      MarkdownPaste,
       Canvas,
     ],
     // Don't render on the server, only on the client after hydration

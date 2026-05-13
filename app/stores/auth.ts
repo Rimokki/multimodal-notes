@@ -30,7 +30,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessTokenExpiresAt = ref<number | null>(null)
   const hydrated = ref(false)
 
-  const isLoggedIn = computed(() => Boolean(user.value && accessToken.value))
+  const isLoggedIn = computed(() => Boolean(user.value))
   const isAdmin = computed(() => user.value?.role === 'ADMIN')
   const accountName = computed(() => {
     return user.value?.username || ''
@@ -117,9 +117,19 @@ export const useAuthStore = defineStore('auth', () => {
     setSession(response)
   }
 
+  const hydrateFromServer = (serverUser: AuthUser, _sessionId: string) => {
+    user.value = serverUser
+    // 服务端渲染期间不设置 accessToken（API 调用由 cookie 认证）
+    // 客户端 hydration 后，localStorage 中的 token 会被 hydrate() 恢复
+    hydrated.value = true
+  }
+
   const initialize = async () => {
     hydrate()
     if (!accessToken.value) return
+
+    // 已从 localStorage 恢复完整会话，跳过网络请求
+    if (user.value) return
 
     try {
       await fetchMe()
@@ -140,6 +150,7 @@ export const useAuthStore = defineStore('auth', () => {
     clearSession,
     refreshSession,
     hydrate,
+    hydrateFromServer,
     initialize,
   }
 })

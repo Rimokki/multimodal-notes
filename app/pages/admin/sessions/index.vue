@@ -6,6 +6,8 @@
   const { listSessions } = useAdminApi()
   const authStore = useAuthStore()
 
+  useServerAuth()
+
   const { ready, wait } = useMinimumDelay(500)
   const sessions = ref<any[]>([])
   const total = ref(0)
@@ -33,13 +35,32 @@
     return { type: 'success' as const, text: '在线', icon: CircleCheck }
   }
 
+  const fetchAdminSessions = async () => {
+    return await listSessions(page.value, pageSize.value)
+  }
+
+  const { data: adminSessionsData } = await useAsyncData('admin-sessions', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchAdminSessions()
+  })
+
+  if (adminSessionsData.value) {
+    sessions.value = adminSessionsData.value.sessions
+    total.value = adminSessionsData.value.total
+    ready.value = true
+  } else if (adminSessionsData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadSessions = async () => {
     try {
-      const res = await wait(listSessions(page.value, pageSize.value))
+      const res = await wait(fetchAdminSessions())
       sessions.value = res.sessions
       total.value = res.total
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || '加载登录日志失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || '加载登录日志失败')
+      }
     }
   }
 
@@ -55,8 +76,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadSessions()
+    if (!adminSessionsData.value && authStore.isLoggedIn) {
+      await loadSessions()
+    }
   })
 </script>
 

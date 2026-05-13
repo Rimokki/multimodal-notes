@@ -109,22 +109,60 @@ export function useExport() {
         const tag = (child as Element).tagName.toLowerCase()
         const inner = htmlToMarkdown(child)
         switch (tag) {
-          case 'h1': md += `# ${inner.trim()}\n\n`; break
-          case 'h2': md += `## ${inner.trim()}\n\n`; break
-          case 'h3': md += `### ${inner.trim()}\n\n`; break
-          case 'h4': md += `#### ${inner.trim()}\n\n`; break
-          case 'h5': md += `##### ${inner.trim()}\n\n`; break
-          case 'h6': md += `###### ${inner.trim()}\n\n`; break
-          case 'p': md += `${inner.trim()}\n\n`; break
-          case 'strong': case 'b': md += `**${inner}**`; break
-          case 'em': case 'i': md += `*${inner}*`; break
-          case 's': case 'del': md += `~~${inner}~~`; break
-          case 'u': md += inner; break
+          case 'h1':
+            md += `# ${inner.trim()}\n\n`
+            break
+          case 'h2':
+            md += `## ${inner.trim()}\n\n`
+            break
+          case 'h3':
+            md += `### ${inner.trim()}\n\n`
+            break
+          case 'h4':
+            md += `#### ${inner.trim()}\n\n`
+            break
+          case 'h5':
+            md += `##### ${inner.trim()}\n\n`
+            break
+          case 'h6':
+            md += `###### ${inner.trim()}\n\n`
+            break
+          case 'p':
+            md += `${inner.trim()}\n\n`
+            break
+          case 'strong':
+          case 'b':
+            md += `**${inner}**`
+            break
+          case 'em':
+          case 'i':
+            md += `*${inner}*`
+            break
+          case 's':
+          case 'del':
+            md += `~~${inner}~~`
+            break
+          case 'u':
+            md += inner
+            break
           case 'code':
-            if (child.parentElement?.tagName.toLowerCase() === 'pre') { md += inner; break }
-            md += `\`${inner}\``; break
-          case 'pre': md += `\`\`\`\n${(child as HTMLElement).textContent?.trim() ?? ''}\n\`\`\`\n\n`; break
-          case 'blockquote': md += inner.split('\n').filter(Boolean).map((l) => `> ${l}`).join('\n') + '\n\n'; break
+            if (child.parentElement?.tagName.toLowerCase() === 'pre') {
+              md += inner
+              break
+            }
+            md += `\`${inner}\``
+            break
+          case 'pre':
+            md += `\`\`\`\n${(child as HTMLElement).textContent?.trim() ?? ''}\n\`\`\`\n\n`
+            break
+          case 'blockquote':
+            md +=
+              inner
+                .split('\n')
+                .filter(Boolean)
+                .map((l) => `> ${l}`)
+                .join('\n') + '\n\n'
+            break
           case 'a': {
             const href = (child as HTMLAnchorElement).href
             const isFileCard = child.parentElement?.getAttribute('data-type') === 'file-card'
@@ -134,8 +172,11 @@ export function useExport() {
               clone.querySelector('strong')?.remove()
               clone.querySelectorAll('br').forEach((br) => br.remove())
               linkText = clone.textContent?.trim() ?? ''
+              md += `[file:${linkText}](${href})`
+            } else {
+              md += `[${linkText}](${href})`
             }
-            md += `[${linkText}](${href})`
+
             if (child.parentElement?.tagName.toLowerCase() === 'div') md += '\n\n'
             break
           }
@@ -144,12 +185,24 @@ export function useExport() {
             if (src) md += `![image](${src})\n\n`
             break
           }
-          case 'sup': md += `<sup>${inner}</sup>`; break
-          case 'sub': md += `<sub>${inner}</sub>`; break
-          case 'details': md += `<details>\n${inner.trim()}\n</details>\n\n`; break
-          case 'summary': md += `<summary>${inner.trim()}</summary>\n`; break
-          case 'hr': md += '---\n\n'; break
-          case 'br': md += '\n'; break
+          case 'sup':
+            md += `<sup>${inner}</sup>`
+            break
+          case 'sub':
+            md += `<sub>${inner}</sub>`
+            break
+          case 'details':
+            md += `<details>\n${inner.trim()}\n</details>\n\n`
+            break
+          case 'summary':
+            md += `<summary>${inner.trim()}</summary>\n`
+            break
+          case 'hr':
+            md += '---\n\n'
+            break
+          case 'br':
+            md += '\n'
+            break
           case 'ul':
             if ((child as Element).getAttribute('data-type') === 'taskList') {
               child.childNodes.forEach((li) => {
@@ -173,7 +226,9 @@ export function useExport() {
             })
             md += '\n'
             break
-          case 'li': md += inner; break
+          case 'li':
+            md += inner
+            break
           case 'table': {
             const rows: string[][] = []
             ;(child as Element).querySelectorAll('tr').forEach((tr: Element) => {
@@ -187,19 +242,26 @@ export function useExport() {
               const header = rows[0]!
               md += header.join(' | ') + '\n'
               md += header.map(() => '---').join(' | ') + '\n'
-              rows.slice(1).forEach((row) => { md += row.join(' | ') + '\n' })
+              rows.slice(1).forEach((row) => {
+                md += row.join(' | ') + '\n'
+              })
               md += '\n'
             }
             break
           }
           case 'audio': {
             const src = (child as HTMLAudioElement).src
-            if (src) md += `<audio src="${src}" controls></audio>\n\n`
+            if (src) md += `[audio:${src}](${src})\n\n`
             break
           }
-          case 'mark': md += `==${inner}==`; break
-          case 'div': md += inner; break
-          default: md += inner
+          case 'mark':
+            md += `==${inner}==`
+            break
+          case 'div':
+            md += inner
+            break
+          default:
+            md += inner
         }
       }
     })
@@ -220,7 +282,9 @@ export function useExport() {
           try {
             const parsed = JSON.parse(raw)
             if (Array.isArray(parsed)) lines = parsed
-          } catch { /* skip */ }
+          } catch {
+            /* skip */
+          }
         }
         if (lines.length > 0) {
           const svgStr = canvasLinesToSvg(lines)
@@ -237,7 +301,9 @@ export function useExport() {
       // Remove task list labels (checkboxes handled in htmlToMarkdown)
       tempDiv.querySelectorAll('ul[data-type="taskList"] li label').forEach((l) => l.remove())
 
-      const markdown = `# ${noteTitle.value}\n\n${htmlToMarkdown(tempDiv).trim().replace(/\n{3,}/g, '\n\n')}\n`
+      const markdown = `# ${noteTitle.value}\n\n${htmlToMarkdown(tempDiv)
+        .trim()
+        .replace(/\n{3,}/g, '\n\n')}\n`
       const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' })
       downloadBlob(blob, getSafeFileName(noteTitle.value, 'md'))
       ElMessage.success('Markdown导出成功')
@@ -402,7 +468,9 @@ export function useExport() {
           try {
             const parsed = JSON.parse(raw)
             if (Array.isArray(parsed)) lines = parsed
-          } catch { /* skip invalid JSON */ }
+          } catch {
+            /* skip invalid JSON */
+          }
         }
         if (lines.length > 0) {
           const svgStr = canvasLinesToSvg(lines)

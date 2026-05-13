@@ -6,6 +6,8 @@
   const { createBroadcast, listAllNotifications, deleteNotification } = useNotificationApi()
   const authStore = useAuthStore()
 
+  useServerAuth()
+
   const isPublishDialogVisible = ref(false)
   const publishLoading = ref(false)
   const publishForm = reactive({ title: '', content: '' })
@@ -34,13 +36,32 @@
     }
   }
 
+  const fetchAdminNotifications = async () => {
+    return await listAllNotifications(page.value, pageSize.value)
+  }
+
+  const { data: adminNotifData } = await useAsyncData('admin-notifications', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchAdminNotifications()
+  })
+
+  if (adminNotifData.value) {
+    notifications.value = adminNotifData.value.notifications
+    total.value = adminNotifData.value.total
+    ready.value = true
+  } else if (adminNotifData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadNotifications = async () => {
     try {
-      const res = await wait(listAllNotifications(page.value, pageSize.value))
+      const res = await wait(fetchAdminNotifications())
       notifications.value = res.notifications
       total.value = res.total
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || '加载通知列表失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || '加载通知列表失败')
+      }
     }
   }
 
@@ -73,8 +94,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadNotifications()
+    if (!adminNotifData.value && authStore.isLoggedIn) {
+      await loadNotifications()
+    }
   })
 </script>
 

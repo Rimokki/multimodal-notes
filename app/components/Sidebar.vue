@@ -381,7 +381,6 @@
   )
 
   onMounted(async () => {
-    await authStore.initialize()
     if (authStore.isLoggedIn) {
       await notificationStore.fetchUnreadCount()
     }

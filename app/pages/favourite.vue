@@ -5,6 +5,8 @@
   const authStore = useAuthStore()
   const { listNotes, toggleFavorite } = useNotesApi()
 
+  useServerAuth()
+
   const loading = ref(false)
   const { ready, wait } = useMinimumDelay(500)
   const notes = ref<NoteItem[]>([])
@@ -12,6 +14,25 @@
   const currentPage = ref(1)
   const pageSize = ref(5)
   const pageSizes = [5, 10, 20, 50]
+
+  const fetchFavorites = async () => {
+    return await listNotes('favorite', '', currentPage.value, pageSize.value)
+  }
+
+  const { data: favData } = await useAsyncData('favourites', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchFavorites()
+  })
+
+  if (favData.value) {
+    notes.value = favData.value.notes
+    total.value = favData.value.total
+    currentPage.value = favData.value.page
+    pageSize.value = favData.value.pageSize
+    ready.value = true
+  } else if (favData.value === null && import.meta.server) {
+    ready.value = true
+  }
 
   const loadFavoriteNotes = async () => {
     if (!authStore.isLoggedIn) {
@@ -23,13 +44,15 @@
 
     loading.value = true
     try {
-      const response = await wait(listNotes('favorite', '', currentPage.value, pageSize.value))
+      const response = await wait(fetchFavorites())
       notes.value = response.notes
       total.value = response.total
       currentPage.value = response.page
       pageSize.value = response.pageSize
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载收藏失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载收藏失败')
+      }
     } finally {
       loading.value = false
     }
@@ -66,8 +89,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadFavoriteNotes()
+    if (!favData.value && authStore.isLoggedIn) {
+      await loadFavoriteNotes()
+    }
   })
 </script>
 

@@ -6,6 +6,8 @@
   const { listNotes, deleteNote } = useAdminApi()
   const authStore = useAuthStore()
 
+  useServerAuth()
+
   const { ready, wait } = useMinimumDelay(500)
   const notes = ref<any[]>([])
   const total = ref(0)
@@ -20,13 +22,32 @@
     return new Date(value).toLocaleString()
   }
 
+  const fetchAdminNotes = async () => {
+    return await listNotes(page.value, pageSize.value, keyword.value || undefined)
+  }
+
+  const { data: adminNotesData } = await useAsyncData('admin-notes', async () => {
+    if (!authStore.isLoggedIn) return null
+    return await fetchAdminNotes()
+  })
+
+  if (adminNotesData.value) {
+    notes.value = adminNotesData.value.notes
+    total.value = adminNotesData.value.total
+    ready.value = true
+  } else if (adminNotesData.value === null && import.meta.server) {
+    ready.value = true
+  }
+
   const loadNotes = async () => {
     try {
-      const res = await wait(listNotes(page.value, pageSize.value, keyword.value || undefined))
+      const res = await wait(fetchAdminNotes())
       notes.value = res.notes
       total.value = res.total
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || '加载笔记列表失败')
+      if (import.meta.client) {
+        ElMessage.error(error?.data?.statusMessage || '加载笔记列表失败')
+      }
     }
   }
 
@@ -65,8 +86,9 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
-    await loadNotes()
+    if (!adminNotesData.value && authStore.isLoggedIn) {
+      await loadNotes()
+    }
   })
 </script>
 

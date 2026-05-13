@@ -1,4 +1,3 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'node:path'
 
@@ -8,6 +7,9 @@ const fileStorageMount =
 export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2025-07-15',
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+  },
   devtools: { enabled: true },
   runtimeConfig: {
     authSecret: process.env.AUTH_SECRET || 'dev-only-change-me',
@@ -16,9 +18,6 @@ export default defineNuxtConfig({
     authRefreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'mn_refresh_token',
     authCookieSecure: process.env.AUTH_COOKIE_SECURE === 'true',
   },
-  // app: {
-  //   pageTransition: { name: 'page', mode: 'out-in' },
-  // },
   imports: {
     autoImport: true,
     dirs: ['composables'],
@@ -33,10 +32,28 @@ export default defineNuxtConfig({
     icon: 'ElIcon',
     importStyle: 'scss',
   },
+  routeRules: {
+    '/': { ssr: true },
+    '/about': { ssr: true },
+    '/my-notes': { ssr: true },
+    '/favourite': { ssr: true },
+    '/recycle-bin': { ssr: true },
+    '/search-result': { ssr: true },
+    '/admin/**': { ssr: true },
+    '/editor': { ssr: false },
+    '/personal': { ssr: false },
+  },
   vite: {
+    resolve: {
+      dedupe: ['vue'],
+    },
+    ssr: {
+      noExternal: ['vue'],
+    },
     plugins: [tailwindcss() as any],
     optimizeDeps: {
       include: [
+        'vue',
         'dayjs',
         'dayjs/plugin/*.js',
         'lodash-unified',
