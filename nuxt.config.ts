@@ -7,6 +7,9 @@ const fileStorageMount =
 export default defineNuxtConfig({
   ssr: false,
   compatibilityDate: '2025-07-15',
+  app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+  },
   devtools: { enabled: true },
   runtimeConfig: {
     authSecret: process.env.AUTH_SECRET || 'dev-only-change-me',

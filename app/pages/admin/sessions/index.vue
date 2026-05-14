@@ -4,7 +4,6 @@
   definePageMeta({ layout: 'default' })
 
   const { listSessions } = useAdminApi()
-  const authStore = useAuthStore()
 
   const { ready, wait } = useMinimumDelay(500)
   const sessions = ref<any[]>([])

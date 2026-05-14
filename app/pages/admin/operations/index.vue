@@ -4,7 +4,6 @@
   definePageMeta({ layout: 'default' })
 
   const { listLogs } = useAdminApi()
-  const authStore = useAuthStore()
 
   const { ready, wait } = useMinimumDelay(500)
   const logs = ref<any[]>([])

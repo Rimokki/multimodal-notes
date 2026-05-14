@@ -4,7 +4,6 @@
   definePageMeta({ layout: 'default' })
 
   const { listUsers, updateUser, resetPassword } = useAdminApi()
-  const authStore = useAuthStore()
 
   const { ready, wait } = useMinimumDelay(500)
   const users = ref<any[]>([])

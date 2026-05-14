@@ -4,7 +4,6 @@
   definePageMeta({ layout: 'default' })
 
   const { listNotes, deleteNote } = useAdminApi()
-  const authStore = useAuthStore()
 
   const { ready, wait } = useMinimumDelay(500)
   const notes = ref<any[]>([])
