@@ -82,7 +82,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadNotes()
   })
 </script>

@@ -1,4 +1,3 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
 import tailwindcss from '@tailwindcss/vite'
 import { resolve } from 'node:path'
 
@@ -16,9 +15,6 @@ export default defineNuxtConfig({
     authRefreshCookieName: process.env.AUTH_REFRESH_COOKIE_NAME || 'mn_refresh_token',
     authCookieSecure: process.env.AUTH_COOKIE_SECURE === 'true',
   },
-  // app: {
-  //   pageTransition: { name: 'page', mode: 'out-in' },
-  // },
   imports: {
     autoImport: true,
     dirs: ['composables'],
@@ -34,9 +30,16 @@ export default defineNuxtConfig({
     importStyle: 'scss',
   },
   vite: {
+    resolve: {
+      dedupe: ['vue'],
+    },
+    ssr: {
+      noExternal: ['vue'],
+    },
     plugins: [tailwindcss() as any],
     optimizeDeps: {
       include: [
+        'vue',
         'dayjs',
         'dayjs/plugin/*.js',
         'lodash-unified',

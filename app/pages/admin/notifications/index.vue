@@ -73,7 +73,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadNotifications()
   })
 </script>

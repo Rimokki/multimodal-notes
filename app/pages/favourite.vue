@@ -66,7 +66,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadFavoriteNotes()
   })
 </script>

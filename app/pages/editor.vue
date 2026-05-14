@@ -67,7 +67,6 @@
   })
 
   onMounted(async () => {
-    await authStore.initialize()
     if (!authStore.isLoggedIn) {
       ElMessage.warning('请先登录后再编辑笔记')
       await router.push('/')
@@ -139,7 +138,7 @@
   </div>
 </template>
 
-<style lang="postcss" scoped>
+<style scoped>
   :deep(.note-title-input .el-textarea__inner) {
     padding: 0 !important;
     box-shadow: none !important;
@@ -148,6 +147,6 @@
   }
 
   :deep(.note-title-input .el-textarea__inner::placeholder) {
-    @apply text-gray-300;
+    color: #d1d5dc !important;
   }
 </style>

@@ -112,7 +112,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadLogs()
   })
 </script>

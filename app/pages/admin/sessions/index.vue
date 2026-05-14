@@ -55,7 +55,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadSessions()
   })
 </script>

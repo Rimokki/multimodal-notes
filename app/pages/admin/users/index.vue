@@ -72,7 +72,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadUsers()
   })
 </script>

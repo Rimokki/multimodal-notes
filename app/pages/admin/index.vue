@@ -80,7 +80,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadStats()
     window.addEventListener('resize', handleResize)
   })

@@ -97,7 +97,6 @@
   }
 
   onMounted(async () => {
-    await authStore.initialize()
     await loadDeletedNotes()
   })
 </script>

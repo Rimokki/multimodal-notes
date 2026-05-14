@@ -121,6 +121,9 @@ export const useAuthStore = defineStore('auth', () => {
     hydrate()
     if (!accessToken.value) return
 
+    // 已从 localStorage 恢复完整会话，跳过网络请求
+    if (user.value) return
+
     try {
       await fetchMe()
     } catch {

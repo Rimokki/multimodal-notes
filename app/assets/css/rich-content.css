@@ -1,4 +1,8 @@
 .note-rich-content {
+  img {
+    border-radius: 8px;
+  }
+
   table {
     border-collapse: collapse;
     margin: 0;
