@@ -14,6 +14,31 @@
   const purgeDialogVisible = ref(false)
   const purgeLoading = ref(false)
   const pendingPurgeNote = ref<NoteItem | null>(null)
+  const purgeCountdown = ref(3)
+  let purgeCountdownTimer: ReturnType<typeof setInterval> | null = null
+
+  const purgeConfirmText = computed(() =>
+    purgeCountdown.value > 0 ? `彻底删除 (${purgeCountdown.value}s)` : '彻底删除',
+  )
+
+  const startPurgeCountdown = () => {
+    purgeCountdown.value = 3
+    purgeCountdownTimer = setInterval(() => {
+      purgeCountdown.value -= 1
+      if (purgeCountdown.value <= 0 && purgeCountdownTimer) {
+        clearInterval(purgeCountdownTimer)
+        purgeCountdownTimer = null
+      }
+    }, 1000)
+  }
+
+  const stopPurgeCountdown = () => {
+    if (purgeCountdownTimer) {
+      clearInterval(purgeCountdownTimer)
+      purgeCountdownTimer = null
+    }
+    purgeCountdown.value = 3
+  }
 
   const loadDeletedNotes = async () => {
     if (!authStore.isLoggedIn) {
@@ -71,6 +96,7 @@
   const closePurgeDialog = () => {
     purgeDialogVisible.value = false
     pendingPurgeNote.value = null
+    stopPurgeCountdown()
   }
 
   const confirmPurge = async () => {
@@ -183,12 +209,14 @@
       v-model="purgeDialogVisible"
       :title="''"
       width="420px"
-      confirm-text="彻底删除"
+      :confirm-text="purgeConfirmText"
       cancel-text="取消"
       :confirm-loading="purgeLoading"
+      :confirm-disabled="purgeCountdown > 0"
       :close-on-click-modal="!purgeLoading"
       @cancel="closePurgeDialog"
       @close="closePurgeDialog"
+      @opened="startPurgeCountdown"
       @confirm="confirmPurge"
     >
       <template #header>

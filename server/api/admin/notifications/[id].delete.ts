@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   await prisma.notification.delete({ where: { id } })
 
-  await logAdminAction(event, admin.id, 'NOTIFICATION_DELETE', id, {
+  await logAdminAction(admin.id, 'NOTIFICATION_DELETE', id, {
     title: notification.title,
   })
 

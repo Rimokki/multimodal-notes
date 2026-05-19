@@ -35,7 +35,10 @@ export default defineEventHandler(async (event) => {
     throw createAuthError(400, 'No valid fields to update')
   }
 
-  const target = await prisma.user.findUnique({ where: { id }, select: { email: true, username: true, isActive: true, role: true } })
+  const target = await prisma.user.findUnique({
+    where: { id },
+    select: { email: true, username: true, isActive: true, role: true },
+  })
   const targetLabel = (target?.username || target?.email) ?? `#${id}`
 
   const updated = await prisma.user.update({
@@ -50,7 +53,7 @@ export default defineEventHandler(async (event) => {
   if (data.role !== undefined) {
     changes.push(`角色: ${target?.role ?? '未知'} → ${data.role}`)
   }
-  await logAdminAction(event, admin.id, 'USER_UPDATE', id, {
+  await logAdminAction(admin.id, 'USER_UPDATE', id, {
     target: targetLabel,
     changes,
   })

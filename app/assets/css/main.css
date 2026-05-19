@@ -8,6 +8,22 @@
 @source "./composables/**/*.{js,ts}";
 @source "./utils/**/*.{js,ts}";
 
+@font-face {
+  font-family: 'MapleMono';
+  src: url('@/assets/fonts/MapleMono-SemiBold.ttf.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'MapleMono';
+  src: url('@/assets/fonts/MapleMono-ExtraBold.ttf.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 .selector::-webkit-scrollbar {
   display: none;
 }

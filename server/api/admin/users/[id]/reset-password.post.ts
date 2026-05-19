@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   })
 
   const targetLabel = (target.username || target.email) ?? `#${id}`
-  await logAdminAction(event, admin.id, 'PASSWORD_RESET', id, {
+  await logAdminAction(admin.id, 'PASSWORD_RESET', id, {
     target: targetLabel,
   })
 

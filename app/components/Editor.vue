@@ -50,6 +50,8 @@
   import { DetailsContent, DetailsSummary } from '@tiptap/extension-details'
   import { TaskItem, TaskList } from '@tiptap/extension-list'
   import { TextStyleKit } from '@tiptap/extension-text-style'
+  import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+  import { createLowlight, common } from 'lowlight'
   import { TableKit } from '@tiptap/extension-table'
   import { Markdown } from '@tiptap/markdown'
   import { Details } from '~/extensions/details'
@@ -154,6 +156,12 @@
       StarterKit.configure({
         heading: false,
         link: false,
+        codeBlock: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight: createLowlight(common),
+        enableTabIndentation: true,
+        tabSize: 2,
       }),
       CharacterCount,
       Image,

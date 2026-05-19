@@ -7,6 +7,7 @@
     confirmText?: string
     cancelText?: string
     confirmLoading?: boolean
+    confirmDisabled?: boolean
     closeOnClickModal?: boolean
     destroyOnClose?: boolean
   }
@@ -19,6 +20,7 @@
     confirmText: '确认',
     cancelText: '取消',
     confirmLoading: false,
+    confirmDisabled: false,
     closeOnClickModal: true,
     destroyOnClose: false,
   })
@@ -68,7 +70,7 @@
     <template v-if="props.showFooter" #footer>
       <slot name="footer" :close="handleCancel" :confirm="handleConfirm">
         <el-button @click="handleCancel">{{ props.cancelText }}</el-button>
-        <el-button type="primary" :loading="props.confirmLoading" @click="handleConfirm">
+        <el-button type="primary" :loading="props.confirmLoading" :disabled="props.confirmDisabled" @click="handleConfirm">
           {{ props.confirmText }}
         </el-button>
       </slot>

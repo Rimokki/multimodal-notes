@@ -1,6 +1,7 @@
 .note-rich-content {
   img {
     border-radius: 8px;
+    border: 1px solid var(--gray-3, #dbe5ef);
   }
 
   table {
@@ -248,7 +249,8 @@
   background: #f3f4f6;
   border-radius: 6px;
   color: #334155;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-family: MapleMono, 'Cascadia Code', monospace;
+  font-weight: 600;
   font-size: 0.86em;
   padding: 0.18em 0.38em;
 }
@@ -268,6 +270,104 @@
   display: block;
   font-size: 0.9rem;
   padding: 0;
+
+  .hljs-comment,
+  .hljs-quote {
+    color: #6b7280;
+    font-style: italic;
+  }
+
+  .hljs-doctag,
+  .hljs-keyword,
+  .hljs-template-tag,
+  .hljs-selector-tag {
+    color: #be185d;
+    font-weight: 500;
+  }
+
+  .hljs-addition,
+  .hljs-regexp,
+  .hljs-string,
+  .hljs-symbol {
+    color: #0d9464;
+  }
+
+  .hljs-boolean,
+  .hljs-literal,
+  .hljs-number,
+  .hljs-selector-id,
+  .hljs-section,
+  .hljs-title.class_,
+  .hljs-title.class_.inherited__ {
+    color: #7c3aed;
+  }
+
+  .hljs-built_in,
+  .hljs-class .hljs-title,
+  .hljs-title.function_,
+  .hljs-title.function_.invoke__,
+  .hljs-type {
+    color: #c2710b;
+  }
+
+  .hljs-attr,
+  .hljs-attribute,
+  .hljs-params,
+  .hljs-selector-attr,
+  .hljs-selector-pseudo,
+  .hljs-template-variable,
+  .hljs-variable,
+  .hljs-variable.constant_,
+  .hljs-variable.language_ {
+    color: #c2710b;
+  }
+
+  .hljs-title,
+  .hljs-property {
+    color: #2563eb;
+  }
+
+  .hljs-link,
+  .hljs-name,
+  .hljs-selector-class,
+  .hljs-tag {
+    color: #1f7822;
+  }
+
+  .hljs-bullet,
+  .hljs-code,
+  .hljs-formula {
+    color: #374151;
+  }
+
+  .hljs-meta {
+    color: #6b7280;
+  }
+
+  .hljs-meta .hljs-keyword {
+    color: #be185d;
+  }
+
+  .hljs-meta .hljs-string {
+    color: #0d9464;
+  }
+
+  .hljs-deletion {
+    color: #dc2626;
+  }
+
+  .hljs-emphasis {
+    font-style: italic;
+  }
+
+  .hljs-strong {
+    font-weight: 700;
+  }
+
+  .hljs-char.escape_,
+  .hljs-subst {
+    color: #c2710b;
+  }
 }
 
 /* .note-rich-content .ProseMirror mark {

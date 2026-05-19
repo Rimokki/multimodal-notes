@@ -1,13 +1,5 @@
 <script lang="ts" setup>
-  import {
-    Notebook,
-    Star,
-    Trash,
-    NotepadText,
-    NotepadTextDashed,
-    FilePlusCorner,
-    Plus,
-  } from 'lucide-vue-next'
+  import { Notebook, Star, Trash, NotepadText, FilePlusCorner, Plus } from 'lucide-vue-next'
   import type { NoteItem } from '~/composables/useNotesApi'
 
   const router = useRouter()
@@ -294,7 +286,7 @@
                   class="flex w-full min-w-0 items-center gap-1"
                   @click="() => $router.push('/recycle-bin')"
                 >
-                  <NotepadTextDashed :size="20" class="shrink-0" />
+                  <Notebook :size="20" class="shrink-0" />
                   <span class="min-w-0 truncate">{{ toRowTitle(row) }}</span>
                 </span>
               </template>

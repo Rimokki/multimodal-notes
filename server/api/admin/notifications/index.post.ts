@@ -19,7 +19,7 @@ export default defineEventHandler(async (event) => {
 
   const notification = await createBroadcastNotification(title, content, admin.id)
 
-  await logAdminAction(event, admin.id, 'NOTIFICATION_BROADCAST', undefined, {
+  await logAdminAction(admin.id, 'NOTIFICATION_BROADCAST', undefined, {
     notificationId: notification.id,
     title,
   })

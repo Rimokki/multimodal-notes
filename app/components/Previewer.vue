@@ -18,6 +18,8 @@
   import Audio from '@tiptap/extension-audio'
   import { TaskItem, TaskList } from '@tiptap/extension-list'
   import { DetailsContent, DetailsSummary } from '@tiptap/extension-details'
+  import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+  import { createLowlight, common } from 'lowlight'
   import { TextStyleKit } from '@tiptap/extension-text-style'
   import { TableKit } from '@tiptap/extension-table'
   import { Details } from '~/extensions/details'
@@ -37,6 +39,11 @@
       StarterKit.configure({
         heading: false,
         link: false,
+        codeBlock: false,
+      }),
+      CodeBlockLowlight.configure({
+        lowlight: createLowlight(common),
+        enableTabIndentation: true,
       }),
       Image,
       FileCard,

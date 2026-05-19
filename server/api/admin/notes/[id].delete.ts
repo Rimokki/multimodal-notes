@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
   await prisma.note.delete({ where: { id } })
 
   const ownerLabel = note.owner?.username || note.owner?.email || '已注销用户'
-  await logAdminAction(event, admin.id, 'NOTE_DELETE', id, {
+  await logAdminAction(admin.id, 'NOTE_DELETE', id, {
     title: note.title,
     owner: ownerLabel,
   })

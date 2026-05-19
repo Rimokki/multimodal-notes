@@ -395,7 +395,9 @@
     <div
       class="h-14 flex items-center justify-between overflow-hidden whitespace-nowrap px-5! mt-2!"
     >
-      <span v-if="!isCollapse" class="font-bold text-gray-700">Multimodal-Notes</span>
+      <span v-if="!isCollapse" class="title text-gray-700"
+        >Multimodal-<span class="text-[#00dc82]">Notes</span></span
+      >
 
       <template v-if="!isCollapse">
         <div class="account-status flex justify-evenly gap-2">
@@ -829,6 +831,10 @@
 </template>
 
 <style scoped>
+  .title {
+    font-weight: 700;
+  }
+
   .el-menu-vertical {
     --el-menu-bg-color: #fafafa;
     --el-menu-border-color: transparent;

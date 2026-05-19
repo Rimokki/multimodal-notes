@@ -14,25 +14,6 @@
   const pageSize = ref(5)
   const pageSizes = [5, 10, 20, 50]
 
-  const fetchNotes = async () => {
-    return await listNotes('all', keyword.value, currentPage.value, pageSize.value)
-  }
-
-  const { data: notesData } = await useAsyncData('my-notes', async () => {
-    if (!authStore.isLoggedIn) return null
-    return await fetchNotes()
-  })
-
-  if (notesData.value) {
-    notes.value = notesData.value.notes
-    total.value = notesData.value.total
-    currentPage.value = notesData.value.page
-    pageSize.value = notesData.value.pageSize
-    ready.value = true
-  } else if (notesData.value === null && import.meta.server) {
-    ready.value = true
-  }
-
   const loadNotes = async (resetPage = false) => {
     if (resetPage) {
       currentPage.value = 1
@@ -47,15 +28,15 @@
 
     loading.value = true
     try {
-      const response = await wait(fetchNotes())
+      const response = await wait(
+        listNotes('all', keyword.value, currentPage.value, pageSize.value),
+      )
       notes.value = response.notes
       total.value = response.total
       currentPage.value = response.page
       pageSize.value = response.pageSize
     } catch (error: any) {
-      if (import.meta.client) {
-        ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载笔记失败')
-      }
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载笔记失败')
     } finally {
       loading.value = false
     }

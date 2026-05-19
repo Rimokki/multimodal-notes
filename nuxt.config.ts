@@ -33,18 +33,12 @@ export default defineNuxtConfig({
     importStyle: 'scss',
   },
   vite: {
-    resolve: {
-      dedupe: ['vue'],
-    },
-    ssr: {
-      noExternal: ['vue'],
-    },
-    plugins: [tailwindcss() as any],
+    plugins: [tailwindcss()],
     optimizeDeps: {
       include: [
         'vue',
         'dayjs',
-        'dayjs/plugin/*.js',
+        'dayjs/plugin/*',
         'lodash-unified',
         'lucide-vue-next',
         '@tiptap/vue-3',
