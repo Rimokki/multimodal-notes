@@ -11,28 +11,56 @@ export default defineEventHandler(async (event) => {
   const noteId = parseNoteId(event)
   const body = await readBody<FavoriteBody>(event)
 
-  const existing = await prisma.note.findFirst({
+  const note = await prisma.note.findFirst({
     where: {
       id: noteId,
-      userId,
       isDeleted: false,
+      OR: [
+        { userId },
+        { isPublic: true },
+      ],
     },
   })
 
-  if (!existing) {
+  if (!note) {
     throw createAuthError(404, 'Note not found')
   }
 
-  const nextFavorite = typeof body.isFavorite === 'boolean' ? body.isFavorite : !existing.isFavorite
+  const isOwnNote = note.userId === userId
 
-  const note = await prisma.note.update({
-    where: {
-      id: noteId,
-    },
-    data: {
-      isFavorite: nextFavorite,
-    },
+  if (isOwnNote) {
+    const nextFavorite = typeof body.isFavorite === 'boolean' ? body.isFavorite : !note.isFavorite
+
+    const updated = await prisma.note.update({
+      where: { id: noteId },
+      data: { isFavorite: nextFavorite },
+    })
+
+    return { note: updated }
+  }
+
+  // Public note not owned by current user — toggle Favorite record
+  const existing = await prisma.favorite.findUnique({
+    where: { userId_noteId: { userId, noteId } },
   })
 
-  return { note }
+  let isFavorite: boolean
+  if (typeof body.isFavorite === 'boolean') {
+    isFavorite = body.isFavorite
+    if (isFavorite && !existing) {
+      await prisma.favorite.create({ data: { userId, noteId } })
+    } else if (!isFavorite && existing) {
+      await prisma.favorite.delete({ where: { userId_noteId: { userId, noteId } } })
+    }
+  } else {
+    if (existing) {
+      await prisma.favorite.delete({ where: { userId_noteId: { userId, noteId } } })
+      isFavorite = false
+    } else {
+      await prisma.favorite.create({ data: { userId, noteId } })
+      isFavorite = true
+    }
+  }
+
+  return { note: { ...note, isFavorite } }
 })

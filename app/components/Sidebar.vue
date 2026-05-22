@@ -19,6 +19,7 @@
     Clock,
     ClipboardList,
     MessageCircleQuestionMark,
+    Globe,
   } from 'lucide-vue-next'
 
   type AuthResponse = {
@@ -88,6 +89,7 @@
     '/favourite': '3',
     '/recycle-bin': '4',
     '/about': '5',
+    '/community': '12',
     '/admin': '6',
     '/admin/users': '7',
     '/admin/notes': '8',
@@ -761,6 +763,13 @@
           <el-menu-item index="4">
             <el-icon><Trash2 /></el-icon>
             <template #title>回收站</template>
+          </el-menu-item>
+        </NuxtLink>
+
+        <NuxtLink to="/community">
+          <el-menu-item index="12">
+            <el-icon><Globe /></el-icon>
+            <template #title>知识社区</template>
           </el-menu-item>
         </NuxtLink>
 

@@ -1,13 +1,16 @@
 <script setup lang="ts">
-  import { Star, Tag } from 'lucide-vue-next'
+  import { Star, Tag, Share2, Globe } from 'lucide-vue-next'
 
   const router = useRouter()
   const { toggleFavorite, getNoteTags, addNoteTag, removeNoteTag } = useNotesApi()
   const { createTag } = useTagsApi()
+  const { toggleShare } = useCommunityApi()
   const { exportMarkdown, exportPdf, exportDocx } = useExport()
   const noteTitleVal = useState('noteTitle')
   const noteId = useState<number | null>('activeNoteId', () => null)
   const noteIsFavorite = useState('noteIsFavorite', () => false)
+  const noteIsPublic = useState('noteIsPublic', () => false)
+  const isOwner = useState('noteIsOwner', () => false)
   const noteSaveStatus = useState<'idle' | 'saving' | 'saved' | 'error'>(
     'noteSaveStatus',
     () => 'idle',
@@ -93,6 +96,7 @@
     tagInputVisible.value = false
   }
 
+  const isShareDialogVisible = ref(false)
   const isExportDialogVisible = ref(false)
   const exportType = ref('markdown')
   const exportOptions = [
@@ -135,12 +139,38 @@
     }
   }
 
+  const shareLoading = ref(false)
+
+  const openShareDialog = () => {
+    if (!noteId.value) {
+      ElMessage.warning('当前笔记尚未初始化')
+      return
+    }
+    isShareDialogVisible.value = true
+  }
+
+  const handleShareConfirm = async () => {
+    if (!noteId.value) return
+
+    shareLoading.value = true
+    try {
+      const { note } = await toggleShare(noteId.value)
+      noteIsPublic.value = note.isPublic
+      ElMessage.success(note.isPublic ? '笔记已公开分享' : '笔记已取消分享')
+      isShareDialogVisible.value = false
+    } catch (error: any) {
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '操作失败')
+    } finally {
+      shareLoading.value = false
+    }
+  }
+
   const toggleEditMode = () => {
     isEditing.value = !isEditing.value
   }
 
   const goBack = () => {
-    router.push('/')
+    router.back()
   }
 </script>
 
@@ -165,14 +195,28 @@
           </span>
         </div>
 
-        <div class="flex items-center justify-between w-72 mr-4">
+        <div class="flex items-center gap-2 mr-4">
           <el-button :type="isMarked ? 'warning' : ''" :icon="Star" circle @click="toggleMark" />
-          <el-tooltip content="标签" placement="bottom" :show-arrow="false">
-            <el-button :icon="Tag" circle @click="openTagDialog" />
-          </el-tooltip>
+          <template v-if="isOwner">
+            <el-tooltip
+              :content="noteIsPublic ? '已分享' : '分享笔记'"
+              placement="bottom"
+              :show-arrow="false"
+            >
+              <el-button
+                :type="noteIsPublic ? 'success' : ''"
+                :icon="noteIsPublic ? Globe : Share2"
+                circle
+                @click="openShareDialog"
+              />
+            </el-tooltip>
+            <el-tooltip content="标签" placement="bottom" :show-arrow="false">
+              <el-button :icon="Tag" circle @click="openTagDialog" />
+            </el-tooltip>
+          </template>
 
           <el-button @click="isExportDialogVisible = !isExportDialogVisible">导出</el-button>
-          <el-button :type="isEditing ? '' : 'primary'" @click="toggleEditMode">
+          <el-button v-if="isOwner" :type="isEditing ? '' : 'primary'" @click="toggleEditMode">
             {{ isEditing ? '预览' : '编辑' }}
           </el-button>
           <el-button class="ml-0!" @click="goBack">返回</el-button>
@@ -196,6 +240,27 @@
         <slot />
       </div>
     </div>
+
+    <Dialog
+      v-model="isShareDialogVisible"
+      width="400px"
+      :confirm-text="noteIsPublic ? '取消分享' : '确认分享'"
+      :confirm-loading="shareLoading"
+      @confirm="handleShareConfirm"
+      @cancel="isShareDialogVisible = false"
+      @close="isShareDialogVisible = false"
+    >
+      <template #header>
+        <div class="font-bold">{{ noteIsPublic ? '取消分享' : '分享笔记' }}</div>
+      </template>
+      <p class="text-gray-500 py-2">
+        {{
+          noteIsPublic
+            ? '确定要取消分享吗？取消后其他用户将无法在知识社区中查看此笔记。'
+            : '确定要分享此笔记吗？分享后所有用户都可以在知识社区中查看此笔记。'
+        }}
+      </p>
+    </Dialog>
 
     <Dialog
       v-model="isExportDialogVisible"

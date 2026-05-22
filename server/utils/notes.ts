@@ -15,6 +15,15 @@ export async function requireNoteOwner(event: H3Event) {
   return user.id
 }
 
+export async function tryRequireNoteOwner(event: H3Event): Promise<number | null> {
+  try {
+    const { user } = await requireAccessUser(event)
+    return user.id
+  } catch {
+    return null
+  }
+}
+
 export function parseNoteId(event: H3Event): number {
   const rawId = getRouterParam(event, 'id')
   const noteId = Number(rawId)

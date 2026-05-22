@@ -6,11 +6,16 @@ export type NoteItem = {
   rawText: string | null
   isFavorite: boolean
   isDeleted: boolean
+  isPublic?: boolean
   deletedAt: string | null
   createdAt: string
   updatedAt: string
+  owner?: { id: number; username: string | null; avatarUrl: string | null } | null
   assets?: NoteAssetItem[]
   tags?: NoteTagItem[]
+  isOwner?: boolean
+  isLiked?: boolean
+  likeCount?: number
 }
 
 export type NoteTagItem = {

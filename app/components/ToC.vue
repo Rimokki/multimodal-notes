@@ -181,8 +181,8 @@
             this.editor.view.focus()
           }
 
-          if (history.pushState) {
-            history.pushState(null, null, `#${id}`)
+          if (history.replaceState) {
+            history.replaceState(null, null, `#${id}`)
           }
 
           this.scrollToElement(element)

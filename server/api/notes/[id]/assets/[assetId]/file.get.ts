@@ -73,10 +73,13 @@ export default defineEventHandler(async (event) => {
     where: {
       id: assetId,
       noteId,
-      userId,
       deletedAt: null,
       note: {
         isDeleted: false,
+        OR: [
+          { userId },
+          { isPublic: true },
+        ],
       },
     },
   })

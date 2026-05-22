@@ -1,4 +1,6 @@
 <script lang="ts" setup>
+  import { Globe } from 'lucide-vue-next'
+
   definePageMeta({
     layout: 'editor',
   })
@@ -13,19 +15,21 @@
   const noteId = useState<number | null>('activeNoteId', () => null)
   const title = useState('noteTitle', () => '')
   const isFavorite = useState('noteIsFavorite', () => false)
+  const noteIsPublic = useState('noteIsPublic', () => false)
   const saveStatus = useState<'idle' | 'saving' | 'saved' | 'error'>('noteSaveStatus', () => 'idle')
   const content = useState('noteContent', () => '')
   const editorRef = ref()
   const loading = ref(true)
   const bootstrapping = ref(true)
   const saveTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+  const isOwner = useState('noteIsOwner', () => false)
 
   const onTitleEnter = () => {
     editorRef.value?.focus()
   }
 
   const saveNow = async () => {
-    if (!noteId.value || bootstrapping.value) {
+    if (!noteId.value || bootstrapping.value || !isOwner.value) {
       return
     }
 
@@ -64,16 +68,35 @@
     if (saveTimer.value) {
       clearTimeout(saveTimer.value)
     }
+
+    noteId.value = null
+    title.value = ''
+    content.value = ''
+    isFavorite.value = false
+    isOwner.value = false
+    noteIsPublic.value = false
+    isEditing.value = false
+    loading.value = true
+    bootstrapping.value = true
   })
 
   onMounted(async () => {
-    if (!authStore.isLoggedIn) {
-      ElMessage.warning('请先登录后再编辑笔记')
-      await router.push('/')
-      return
-    }
-
     const rawId = Number(route.query.id)
+
+    // Clear stale state from previous note before loading new one
+    noteId.value = null
+    title.value = ''
+    content.value = ''
+    isFavorite.value = false
+    isOwner.value = false
+    noteIsPublic.value = false
+
+    // Set initial editing state to prevent stale value from previous session
+    if (!Number.isInteger(rawId) || rawId <= 0) {
+      isEditing.value = true
+    } else {
+      isEditing.value = false
+    }
 
     try {
       if (Number.isInteger(rawId) && rawId > 0) {
@@ -82,7 +105,19 @@
         title.value = note.title
         content.value = note.content
         isFavorite.value = note.isFavorite
+        isOwner.value = note.isOwner ?? false
+        noteIsPublic.value = note.isPublic ?? false
+
+        if (isOwner.value) {
+          isEditing.value = true
+        }
       } else {
+        if (!authStore.isLoggedIn) {
+          ElMessage.warning('请先登录后再创建笔记')
+          await router.push('/')
+          return
+        }
+
         const { note } = await createNote({
           title: '无标题笔记',
           content: '',
@@ -91,6 +126,8 @@
         title.value = note.title
         content.value = note.content
         isFavorite.value = note.isFavorite
+        isOwner.value = true
+        noteIsPublic.value = false
         await router.replace(`/editor?id=${note.id}`)
       }
 
@@ -107,6 +144,13 @@
 
 <template>
   <div v-loading="loading" class="w-3xl mx-auto">
+    <div
+      v-if="!isOwner && noteId"
+      class="bg-blue-50 text-blue-700 px-4 py-2 rounded-lg mb-4 flex items-center gap-2"
+    >
+      <Globe :size="16" />
+      <span class="font-medium">您正在以只读模式查看他人的公开笔记</span>
+    </div>
     <div class="mb-4!">
       <el-input
         v-if="isEditing"

@@ -6,11 +6,13 @@
   const router = useRouter()
   const authStore = useAuthStore()
   const { listNotes } = useNotesApi()
+  const { listCommunityNotes } = useCommunityApi()
 
   const searchResults = ref<NoteItem[]>([])
   const totalResults = ref(0)
   const queryParam = (route.query.query as string) || ''
   const searchInput = ref(queryParam)
+  const searchScope = ref<'my' | 'public'>((route.query.scope as 'my' | 'public') || 'my')
 
   const formatDateTime = (value: string | null) => {
     if (!value) {
@@ -117,11 +119,23 @@
     }
 
     try {
-      const searchResponse = await listNotes('all', searchInput.value, 1, 10)
-      searchResults.value = searchResponse.notes
-      totalResults.value = searchResponse.total
+      if (searchScope.value === 'my') {
+        const searchResponse = await listNotes('all', searchInput.value, 1, 10)
+        searchResults.value = searchResponse.notes
+        totalResults.value = searchResponse.total
+      } else {
+        const searchResponse = await listCommunityNotes(searchInput.value, 1, 10)
+        searchResults.value = searchResponse.notes as any
+        totalResults.value = searchResponse.total
+      }
     } catch (error: any) {
-      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '加载笔记失败')
+      ElMessage.error(error?.data?.statusMessage || error?.data?.message || '搜索失败')
+    }
+  }
+
+  const onScopeChange = () => {
+    if (searchInput.value.trim()) {
+      performSearch()
     }
   }
 
@@ -134,16 +148,30 @@
 
 <template>
   <div class="wrapper flex-col mx-6!">
-    <el-input
-      v-model="searchInput"
-      class="search-input"
-      clearable
-      size="large"
-      :prefix-icon="Search"
-      placeholder="搜索"
-      style="width: 30vw !important; min-width: 300px; height: 48px"
-      @keyup.enter="performSearch"
-    />
+    <div class="flex items-center gap-5 mb-4">
+      <el-input
+        v-model="searchInput"
+        class="search-input"
+        clearable
+        size="large"
+        :prefix-icon="Search"
+        placeholder="搜索"
+        style="width: 25vw !important; min-width: 240px; height: 36px"
+        @keyup.enter="performSearch"
+      />
+
+      <div class="custom-segmented">
+        <el-segmented
+          v-model="searchScope"
+          :options="[
+            { label: '我的笔记', value: 'my' },
+            { label: '公开笔记', value: 'public' },
+          ]"
+          size="large"
+          @change="onScopeChange"
+        />
+      </div>
+    </div>
 
     <el-alert
       v-if="!authStore.isLoggedIn"
@@ -192,6 +220,17 @@
             </span>
           </template>
         </el-table-column>
+        <el-table-column v-if="searchScope === 'public'" label="作者" width="160">
+          <template #default="{ row }">
+            <div class="flex items-center gap-1">
+              <el-avatar
+                :src="(row as any).owner?.avatarUrl || '/images/original_avatar.png'"
+                :size="20"
+              />
+              <span class="text-gray-600">{{ (row as any).owner?.username || '未知用户' }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="时间" width="220" align="right">
           <template #default="{ row }"> 更新于 {{ formatDateTime(row.updatedAt) }} </template>
         </el-table-column>
@@ -203,6 +242,11 @@
 
 <style scoped>
   .search-input :deep(.el-input__wrapper) {
-    border-radius: 12px;
+    border-radius: 8px;
+  }
+
+  .custom-segmented .el-segmented {
+    font-weight: 600;
+    --el-border-radius-base: 8px;
   }
 </style>

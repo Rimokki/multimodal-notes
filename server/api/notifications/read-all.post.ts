@@ -6,10 +6,7 @@ export default defineEventHandler(async (event) => {
 
   const allNotifs = await prisma.notification.findMany({
     where: {
-      OR: [
-        { userId: user.id },
-        { type: 'BROADCAST' },
-      ],
+      OR: [{ userId: user.id }, { type: 'BROADCAST' }],
     },
     select: { id: true },
   })
@@ -18,7 +15,7 @@ export default defineEventHandler(async (event) => {
     return { success: true, count: 0 }
   }
 
-  const allIds = allNotifs.map(n => n.id)
+  const allIds = allNotifs.map((n) => n.id)
 
   const readNotifs = await prisma.notificationRead.findMany({
     where: {
@@ -28,16 +25,15 @@ export default defineEventHandler(async (event) => {
     select: { notificationId: true },
   })
 
-  const readIds = new Set(readNotifs.map(r => r.notificationId))
-  const unreadIds = allIds.filter(id => !readIds.has(id))
+  const readIds = new Set(readNotifs.map((r) => r.notificationId))
+  const unreadIds = allIds.filter((id) => !readIds.has(id))
 
   if (unreadIds.length > 0) {
     await prisma.notificationRead.createMany({
-      data: unreadIds.map(notificationId => ({
+      data: unreadIds.map((notificationId) => ({
         notificationId,
         userId: user.id,
       })),
-      skipDuplicates: true,
     })
   }
 

@@ -1,26 +1,27 @@
 import { prisma } from '../../utils/prisma'
 import { createAuthError } from '../../utils/auth'
-import { parseNoteId, requireNoteOwner } from '../../utils/notes'
+import { parseNoteId, tryRequireNoteOwner } from '../../utils/notes'
 
 export default defineEventHandler(async (event) => {
-  const userId = await requireNoteOwner(event)
+  const currentUserId = await tryRequireNoteOwner(event)
   const noteId = parseNoteId(event)
 
   const note = await prisma.note.findFirst({
     where: {
       id: noteId,
-      userId,
+      OR: [
+        currentUserId !== null ? { userId: currentUserId } : undefined,
+        { isPublic: true, isDeleted: false },
+      ].filter(Boolean) as any,
     },
     include: {
+      owner: { select: { id: true, username: true, avatarUrl: true } },
       assets: {
-        where: {
-          deletedAt: null,
-        },
+        where: { deletedAt: null },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       },
-      tags: {
-        include: { tag: true },
-      },
+      tags: { include: { tag: true } },
+      _count: { select: { likes: true } },
     },
   })
 
@@ -28,5 +29,33 @@ export default defineEventHandler(async (event) => {
     throw createAuthError(404, 'Note not found')
   }
 
-  return { note }
+  const isOwner = currentUserId !== null && note.userId === currentUserId
+
+  let isLiked = false
+  let isFavorited = note.isFavorite
+  if (currentUserId) {
+    const [like, favorite] = await Promise.all([
+      prisma.like.findUnique({
+        where: { userId_noteId: { userId: currentUserId, noteId } },
+      }),
+      isOwner
+        ? null
+        : prisma.favorite.findUnique({
+            where: { userId_noteId: { userId: currentUserId, noteId } },
+          }),
+    ])
+    isLiked = !!like
+    if (favorite) isFavorited = true
+  }
+
+  return {
+    note: {
+      ...note,
+      isOwner,
+      isLiked,
+      isFavorite: isFavorited,
+      likeCount: note._count.likes,
+      _count: undefined,
+    },
+  }
 })

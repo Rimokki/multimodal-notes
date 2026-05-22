@@ -27,6 +27,8 @@ model User {
   assets       NoteAsset[]
   tags         Tag[]
   sessions     UserSession[]
+  likes        Like[]
+  favorites    Favorite[]
   adminLogs               AdminLog[]
   sentNotifications       Notification[]     @relation("SentNotifications")
   targetedNotifications   Notification[]
@@ -91,11 +93,14 @@ model Note {
   owner      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   assets     NoteAsset[]
   tags       NoteTag[]
+  likes      Like[]
+  favorites  Favorite[]
   title      String
   content    String   // Tiptap JSON string
   rawText    String?  // Plain text for search optimization
   isFavorite Boolean  @default(false)
   isDeleted  Boolean  @default(false)
+  isPublic   Boolean  @default(false)
   deletedAt  DateTime?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -103,6 +108,7 @@ model Note {
   @@index([userId, updatedAt])
   @@index([userId, isDeleted, updatedAt])
   @@index([userId, isFavorite, updatedAt])
+  @@index([isPublic, updatedAt])
 }
 
 model Tag {
@@ -205,4 +211,30 @@ model NotificationRead {
 
   @@unique([notificationId, userId])
   @@index([userId])
+}
+
+model Like {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  noteId    Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])
+  @@index([noteId])
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  noteId    Int
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, noteId])
+  @@index([noteId])
 }

@@ -1,7 +1,7 @@
 import { prisma } from '../../../utils/prisma'
 import { requireAdminUser } from '../../../utils/auth-session'
 import { parsePaginationParams } from '../../../utils/notes'
-import type { AdminAction } from '../../../../generated/prisma'
+import type { AdminAction } from '../../../../generated/prisma/enums'
 
 export default defineEventHandler(async (event) => {
   await requireAdminUser(event)
@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
   const query = getQuery(event)
   const { page, pageSize, offset, limit } = parsePaginationParams(query.page, query.pageSize)
   const keyword = query.keyword ? String(query.keyword).trim() : ''
-  const action = query.action ? String(query.action).trim() as AdminAction : undefined
+  const action = query.action ? (String(query.action).trim() as AdminAction) : undefined
 
   const where: Record<string, unknown> = {}
   if (action) {
@@ -17,10 +17,7 @@ export default defineEventHandler(async (event) => {
   }
   if (keyword) {
     where.admin = {
-      OR: [
-        { email: { contains: keyword } },
-        { username: { contains: keyword } },
-      ],
+      OR: [{ email: { contains: keyword } }, { username: { contains: keyword } }],
     }
   }
 
